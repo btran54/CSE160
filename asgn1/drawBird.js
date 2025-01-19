@@ -38,8 +38,7 @@ function drawBird() {
     // Body triangles (green) - following the grid pattern exactly
     // Top row
     createTriangle(-1, 1, GREEN, 180);  // Left
-    createTriangle(-1, 2, GREEN, 0);    // Middle-left
-    createTriangle(0, 3, GREEN, 180);   // Middle-right
+    createTriangle(0, 2, GREEN, 90);    // Middle-left
     createTriangle(1, 3, GREEN, 180);
     createTriangle(-1, 3, GREEN, 180);
     createTriangle(1, 2, GREEN, 0);     // Right
@@ -75,7 +74,7 @@ function drawBird() {
     createTriangle(-2, 0, GREEN, 0);    // Left
     createTriangle(-1, 0, GREEN, 180);  // Middle-left
     createTriangle(0, 0, GREEN, 0);     // Middle-right
-    createTriangle(0, 0, GREEN, 270);   // Right 0
+    createTriangle(0, 0, GREEN, 270);   // Right
 
     // Wing
     createTriangle(-1, 0, YELLOW, 90);
@@ -86,14 +85,14 @@ function drawBird() {
     createTriangle(0, 3, YELLOW, 0);
     createTriangle(-1, 3, YELLOW, 0);
 
-    // Beak (yellow)
+    // Beak
     createTriangle(2, 1, YELLOW, 0);
 
     // Eye
     createTriangle(2, 2, WHITE, 180);
     createPoint(1.75, 1.75, BLACK, 8);
 
-    // Legs (yellow)
+    // Legs
     createTriangle(-2, -2, YELLOW, 0);  // Left leg
     createTriangle(0, -2, YELLOW, 0);   // Right leg
     
