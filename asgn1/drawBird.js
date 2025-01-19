@@ -1,3 +1,13 @@
+/*
+Brian Tran
+btran54@ucsc.edu
+
+Notes to Grader:
+- For the Triangle.js class file, I asked an AI assistant to walk me through the steps of creating the rotations for the right triangles.
+- I made the helper functions in drawBird.js myself, but they weren't working correctly so I had the AI assistant fix it for me.
+- Other than the things mentioned in the two previous points. I did everything myself.
+*/
+
 function drawBird() {
     // Helper function to create and configure a shape with rotation
     function createTriangle(x, y, color, rotation) {
