@@ -254,12 +254,35 @@ function main() {
 
 var g_startTime = performance.now()/1000.0;
 var g_seconds = performance.now()/1000.0 - g_startTime;
+let g_frameCount = 0;
+let g_lastFPSUpdate = performance.now();
+let g_currentFPS = 0;
 
 function tick() {
+    // Calculate FPS
+    g_frameCount++;
+    const now = performance.now();
+    const elapsed = now - g_lastFPSUpdate;
+
+    // Update FPS display every second
+    if (elapsed >= 1000) {
+        g_currentFPS = (g_frameCount * 1000) / elapsed;
+        document.getElementById('fpsDisplay').textContent = `FPS: ${g_currentFPS.toFixed(1)}`;
+        
+        // Log warning if FPS drops below 10
+        if (g_currentFPS < 10) {
+            console.warn(`Low FPS detected: ${g_currentFPS.toFixed(1)}`);
+        }
+        
+        // Reset counters
+        g_frameCount = 0;
+        g_lastFPSUpdate = now;
+    }
+
+    // Your existing tick code
     if (g_masterAnim) {
         g_seconds = performance.now()/1000.0 - g_startTime;
         g_stripe1 = Math.sin(g_seconds) * 20;
-        console.log(performance.now());
     }
     renderAllShapes();
     requestAnimationFrame(tick);

@@ -1,74 +1,79 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <title>Assignment 2</title>
-    <link rel="stylesheet" href="../css/styles.css">
-  </head>
+ <head>
+   <meta charset="utf-8" />
+   <title>Assignment 2</title>
+   <link rel="stylesheet" href="../css/styles.css">
+ </head>
 
-  <body onload="main()">
-    <a href="../index.html" class="home-button">Home</a>
+ <body onload="main()">
+   <a href="../index.html" class="home-button">Home</a>
 
-    <!-- Canvas and Controls Container -->
-    <div style="display: flex; gap: 20px; align-items: start;">
-      <!-- Canvas -->
-      <canvas id="webgl" width="400" height="400">
-        Please use a browser that supports "canvas"
-      </canvas>
+   <div style="position: relative;">
+     <!-- Main container -->
+     <div style="display: flex; gap: 20px; align-items: start;">
+       <!-- Left side with canvas -->
+       <div style="display: flex; flex-direction: column;">
+         <canvas id="webgl" width="400" height="400">
+           Please use a browser that supports "canvas"
+         </canvas>
+         <div id="fpsDisplay" style="font-family: monospace;">FPS: --</div>
+       </div>
 
-      <!-- Controls -->
-      <div>
-        <div>
-            <canvas id="angleControl" width="150" height="150">
-            </canvas>
-            <p>Drag inside circle to rotate model</p>
-            <br><br>
-        </div>
-    
-        <p>Animation Event:</p> 
-        <button type="buttton" id="entireAnimOn">ON</button>
-        <button type="buttton" id="entireAnimOff">OFF</button>
-        <br><br>
-    
-        <p>Camera Angle</p>
-        <input type="range" min="0" max="100" value="0" class="slider" id="angleSlide">
-        <br><br>
-    
-        <p>Tail Angle</p>
-        <input type="range" min="-15" max="15" value="0" class="slider" id="tailSlide">
-        <button type="button" id="tailAnimOn">ON</button>
-        <button type="button" id="tailAnimOff">OFF</button>
-        <br><br>
-    
-        <p>Body Segment 1 Angle</p>
-        <input type="range" min="-45" max="45" value="0" class="slider" id="bodySegmentSlide">
-        <button type="button" id="bodySegment1AnimOn">ON</button>
-        <button type="button" id="bodySegment1AnimOff">OFF</button>
-        <br><br>
-    
-        <p>Body Segment 2 Angle</p>
-        <input type="range" min="-45" max="45" value="0" class="slider" id="bodySegmentSlide2">
-        <button type="button" id="bodySegment2AnimOn">ON</button>
-        <button type="button" id="bodySegment2AnimOff">OFF</button>
-        <br><br>
+       <!-- Controls -->
+       <div>
+         <div>
+           <canvas id="angleControl" width="150" height="150">
+           </canvas>
+           <p>Drag inside circle to rotate model</p>
+           <br><br>
+         </div>
+     
+         <p>Animation Event:</p> 
+         <button type="buttton" id="entireAnimOn">ON</button>
+         <button type="buttton" id="entireAnimOff">OFF</button>
+         <br><br>
+     
+         <p>Camera Angle</p>
+         <input type="range" min="0" max="100" value="0" class="slider" id="angleSlide">
+         <br><br>
+     
+         <p>Tail Angle</p>
+         <input type="range" min="-15" max="15" value="0" class="slider" id="tailSlide">
+         <button type="button" id="tailAnimOn">ON</button>
+         <button type="button" id="tailAnimOff">OFF</button>
+         <br><br>
+     
+         <p>Body Segment 1 Angle</p>
+         <input type="range" min="-45" max="45" value="0" class="slider" id="bodySegmentSlide">
+         <button type="button" id="bodySegment1AnimOn">ON</button>
+         <button type="button" id="bodySegment1AnimOff">OFF</button>
+         <br><br>
+     
+         <p>Body Segment 2 Angle</p>
+         <input type="range" min="-45" max="45" value="0" class="slider" id="bodySegmentSlide2">
+         <button type="button" id="bodySegment2AnimOn">ON</button>
+         <button type="button" id="bodySegment2AnimOff">OFF</button>
+         <br><br>
 
-        <button type="button" id="resetButton">Reset</button>
-        <br><br>
+         <button type="button" id="resetButton">Reset</button>
+         <br><br>
 
-        <p>The "poke" (Shift + Click) feature is to turn the orange segments into a rainbow color for 5 seconds.</p>
-        <br><br>
-        <p>The reset button will also pause the animation, so you will have to click the 'ON' button again to resume the animation.</p>
-      </div>
+         <p>The "poke" (Shift + Click) feature is to turn the orange segments into a rainbow color for 5 seconds.</p>
+         <br><br>
+         <p>The reset button will also pause the animation, so you will have to click the 'ON' button again to resume the animation.</p>
+       </div>
+     </div>
+   </div>
 
-
-    <script src="./lib/webgl-utils.js"></script>
-    <script src="./lib/webgl-debug.js"></script>
-    <script src="./lib/cuon-utils.js"></script>
-    <script src="./lib/cuon-matrix.js"></script>
-    <script src="Point.js"></script>
-    <script src="Triangle.js"></script>
-    <script src="Circle.js"></script>
-    <script src="Cube.js"></script>
-    <script src="blockyAnimal.js"></script>
-  </body>
+   <script src="./lib/webgl-utils.js"></script>
+   <script src="./lib/webgl-debug.js"></script>
+   <script src="./lib/cuon-utils.js"></script>
+   <script src="./lib/cuon-matrix.js"></script>
+   <script src="Point.js"></script>
+   <script src="Triangle.js"></script>
+   <script src="Circle.js"></script>
+   <script src="Cube.js"></script>
+   <script src="blockyAnimal.js"></script>
+ </body>
 </html>
