@@ -132,9 +132,32 @@ function addActionsForHtmlUI() {
     document.getElementById('tailAnimOn').onclick = function() { g_tailAnim = true; };
     document.getElementById('tailAnimOff').onclick = function() { g_tailAnim = false; };
       
-    
     // Angle Slider Events
     document.getElementById('angleSlide').addEventListener('mousemove', function() {g_globalAngle = this.value; renderAllShapes();});
+
+    // Reset Button Events
+    document.getElementById('resetButton').onclick = function() {
+    // Reset slider values
+    document.getElementById('angleSlide').value = 0;
+    document.getElementById('tailSlide').value = 0;
+    document.getElementById('bodySegmentSlide').value = 0;
+    document.getElementById('bodySegmentSlide2').value = 0;
+    
+    // Reset animation states
+    g_masterAnim = false;
+    g_tailAnim = true;
+    g_bodySegment1Anim = true;
+    g_bodySegment2Anim = true;
+    
+    // Reset angles
+    g_globalAngle = 0;
+    g_tailAngle = 0;
+    g_bodySegmentAngle = 0;
+    g_bodySegmentAngle2 = 0;
+    
+    // Update the scene
+    renderAllShapes();
+    };
 }
 
 function setupCircularControl() {
