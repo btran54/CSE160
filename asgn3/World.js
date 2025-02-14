@@ -11,7 +11,7 @@ var VSHADER_SOURCE = `
   uniform mat4 u_ProjectionMatrix;
 
   void main() {
-    gl_Position = u_ProjecttionMatrix * u_ViewMatrix * u_GlobalRotateMatrix * u_ModelMatrix * a_Position;
+    gl_Position = u_ProjectionMatrix * u_ViewMatrix * u_GlobalRotateMatrix * u_ModelMatrix * a_Position;
     v_UV = a_UV;
 } `
 
@@ -102,7 +102,7 @@ function connectVariablesToGLSL() {
     return;
   }
 
-  u_GlobalRotateMatrix = gl.getUniformLocation(gl.program, 'u_GlobalRotateMAtrix');
+  u_GlobalRotateMatrix = gl.getUniformLocation(gl.program, 'u_GlobalRotateMatrix');
   if (!u_GlobalRotateMatrix) {
     console.log('Failed to get the storage location of u_GlobalRotateMatrix');
     return;
@@ -140,26 +140,26 @@ let g_selectedType = POINT;
 let g_selectedSegments = 10;
 
 function addActionsForHtmlUI() {
-  document.getElementById('green').onclick = function() {g_selectedColor = [0.0, 1.0, 0.0, 1.0];};
-  document.getElementById('red').onclick = function() {g_selectedColor = [1.0, 0.0, 0.0, 1.0];};
-  document.getElementById('clearButton').onclick = function() {g_shapesList=[]; renderAllShapes();};
-  document.getElementById('drawBirdButton').onclick = function() {g_shapesList = []; drawBird();};
+//   document.getElementById('green').onclick = function() {g_selectedColor = [0.0, 1.0, 0.0, 1.0];};
+//   document.getElementById('red').onclick = function() {g_selectedColor = [1.0, 0.0, 0.0, 1.0];};
+//   document.getElementById('clearButton').onclick = function() {g_shapesList=[]; renderAllShapes();};
+//   document.getElementById('drawBirdButton').onclick = function() {g_shapesList = []; drawBird();};
 
-  document.getElementById('pointButton').onclick = function() {g_selectedType=POINT};
-  document.getElementById('triButton').onclick = function() {g_selectedType=TRIANGLE};
-  document.getElementById('circleButton').onclick = function() {g_selectedType=CIRCLE};
+//   document.getElementById('pointButton').onclick = function() {g_selectedType=POINT};
+//   document.getElementById('triButton').onclick = function() {g_selectedType=TRIANGLE};
+//   document.getElementById('circleButton').onclick = function() {g_selectedType=CIRCLE};
 
 
-  // Color Slider Events
-  document.getElementById('redSlide').addEventListener('mouseup', function() {g_selectedColor[0] = this.value/100;});
-  document.getElementById('greenSlide').addEventListener('mouseup', function() {g_selectedColor[1] = this.value/100;});
-  document.getElementById('blueSlide').addEventListener('mouseup', function() {g_selectedColor[2] = this.value/100;});
+//   // Color Slider Events
+//   document.getElementById('redSlide').addEventListener('mouseup', function() {g_selectedColor[0] = this.value/100;});
+//   document.getElementById('greenSlide').addEventListener('mouseup', function() {g_selectedColor[1] = this.value/100;});
+//   document.getElementById('blueSlide').addEventListener('mouseup', function() {g_selectedColor[2] = this.value/100;});
 
-  // Size Slider Events
-  document.getElementById('sizeSlide').addEventListener('mouseup', function() {g_selectedSize = this.value;});
+//   // Size Slider Events
+//   document.getElementById('sizeSlide').addEventListener('mouseup', function() {g_selectedSize = this.value;});
 
-  // Segment Slider Events
-  document.getElementById('segmentSlide').addEventListener('mouseup', function() {g_selectedSegments = this.value;});
+//   // Segment Slider Events
+//   document.getElementById('segmentSlide').addEventListener('mouseup', function() {g_selectedSegments = this.value;});
 }
 
 function initTextures() {
@@ -169,8 +169,8 @@ function initTextures() {
         return false;
     }
 
-    image.onload = function(){ sendImageToTEXTURE0(image); };
-    image.src = 'sky.jpg';  // Add appropriate image path
+    // image.onload = function(){ sendImageToTEXTURE0(image); };
+    // image.src = 'sky.jpg';  // Add appropriate image path
 
     // Add more textures later
 
@@ -194,11 +194,13 @@ function sendImageToTEXTURE0(image) {
     console.log('Finished loadTexture');
 }
 
+let g_blockyWorld;
+
 function main() {
   setupWebGL();
   connectVariablesToGLSL();
-  addActionsForHtmlUI();
-
+//   addActionsForHtmlUI();
+  g_blockyWorld = new BlockyWorld();
   document.onkeydown = keydown;
 
   initTextures(gl, 0);
@@ -215,22 +217,26 @@ function updateAnimationAngles() {
 }
 
 function keydown(ev) {
-    if (ev.keyCode == 68) {  // D
-        g_eye[0] += 0.2;
+    switch(ev.code) {
+        case 'KeyW':
+            g_blockyWorld.camera.forward(g_blockyWorld.worldMap);
+            break;
+        case 'KeyS':
+            g_blockyWorld.camera.back(g_blockyWorld.worldMap);
+            break;
+        case 'KeyA':
+            g_blockyWorld.camera.left(g_blockyWorld.worldMap);
+            break;
+        case 'KeyD':
+            g_blockyWorld.camera.right(g_blockyWorld.worldMap);
+            break;
+        case 'KeyQ':
+            g_blockyWorld.camera.rotateRight();
+            break;
+        case 'KeyE':
+            g_blockyWorld.camera.rotateLeft();
+            break;
     }
-
-    else if (ev.keyCode == 65) {  // A
-        g_eye[0] -= 2;
-    }
-
-    else if (ev.keyCode == 87) {  // W
-    }
-
-    else if (ev.keyCode == 83) {  // S
-    }
-
-    renderAllShapes();
-    console.log(ev.keyCode);
 }
 
 var g_startTime = performance.now()/1000.0;
@@ -240,32 +246,19 @@ let g_lastFPSUpdate = performance.now();
 let g_currentFPS = 0;
 
 function tick() {
-    // Calculate FPS
     g_frameCount++;
     const now = performance.now();
     const elapsed = now - g_lastFPSUpdate;
 
-    // Update FPS display every second
     if (elapsed >= 1000) {
         g_currentFPS = (g_frameCount * 1000) / elapsed;
         document.getElementById('fpsDisplay').textContent = `FPS: ${g_currentFPS.toFixed(1)}`;
-        
-        // Log warning if FPS drops below 10
-        if (g_currentFPS < 10) {
-            console.warn(`Low FPS detected: ${g_currentFPS.toFixed(1)}`);
-        }
-        
-        // Reset counters
         g_frameCount = 0;
         g_lastFPSUpdate = now;
     }
 
-    // Your existing tick code
-    if (g_masterAnim) {
-        g_seconds = performance.now()/1000.0 - g_startTime;
-        g_stripe1 = Math.sin(g_seconds) * 20;
-    }
-    renderAllShapes();
+    // Render the scene
+    g_blockyWorld.render();
     requestAnimationFrame(tick);
 }
 
@@ -343,11 +336,11 @@ function drawMap() {
 function renderAllShapes() {
   var startTime = performance.now();
 
-  var projMat = newMatrix4();
+  var projMat = new Matrix4();
   projMat.setPersepctive(60, canvas.width / canvas.height, 0.1, 100);
   gl.uniformMatrix4fv(u_ProjectionMatrix, false, projMat.elements);
 
-  var viewMat = newMatrix4();
+  var viewMat = new Matrix4();
 //   viewMat.setLookAt(g_eye[0], g_eye[1], g_eye[2], g_at[0], g_at[1], g_at[2], g_up[0], g_up[1], g_up[2]); // (eye, at, up)
   viewMat.setLookAt(
     g_camera.eye.x, g_camera.eye.y, g_camera.eye.z,
