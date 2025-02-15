@@ -163,35 +163,53 @@ function addActionsForHtmlUI() {
 }
 
 function initTextures() {
-    var image = new Image();
-    if (!image) {
-        console.log('Failed to create the image object');
-        return false;
-    }
+  var image = new Image();
+  if (!image) {
+      console.log('Failed to create the image object');
+      return false;
+  }
 
-    // image.onload = function(){ sendImageToTEXTURE0(image); };
-    // image.src = 'sky.jpg';  // Add appropriate image path
+  // Set crossOrigin before setting src
+  image.crossOrigin = 'anonymous';
 
-    // Add more textures later
+  // Add loading status callback
+  image.onload = function() { sendImageToTEXTURE0(image); };
+  
+  // Set error handler
+  image.onerror = function() {
+      console.log('Failed to load texture image');
+  };
+  
+  // Start loading texture
+  image.src = 'cobblestone.jpg';
 
-    return true;
+  return true;
 }
 
 function sendImageToTEXTURE0(image) {
-    var texture = gl.createTexture();
-    if (!texture) {
-        console.log('Failed to create the texture object');
-        return false;
-    }
+  var texture = gl.createTexture();
+  if (!texture) {
+      console.log('Failed to create the texture object');
+      return false;
+  }
 
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
-    gl.uniform1i(u_Sampler, 0);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, texture);
 
-    console.log('Finished loadTexture');
+  // Set texture parameters
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+
+  try {
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+      gl.uniform1i(u_Sampler0, 0);
+      console.log('Texture loaded successfully');
+  } catch (e) {
+      console.error('Error loading texture:', e);
+  }
 }
 
 let g_blockyWorld;

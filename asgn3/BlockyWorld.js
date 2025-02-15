@@ -9,6 +9,14 @@ class BlockyWorld {
         // World size parameters
         this.worldSize = 32;
         this.worldMap = this.createWorldMap();
+
+        // Pre-create cube instances for reuse
+        this.wallCube = new Cube();
+        this.wallCube.textureNum = 0;
+        
+        this.groundCube = new Cube();
+        this.groundCube.textureNum = -2;
+        this.groundCube.color = [0.3, 0.8, 0.2, 1.0];
     }
 
     createWorldMap() {
@@ -27,17 +35,26 @@ class BlockyWorld {
     }
 
     drawGround() {
-        // Create a ground plane using a flattened cube
-        let ground = new Cube();
-        ground.color = [0.4, 0.8, 0.4, 1.0]; // Light green
-        ground.matrix = new Matrix4();  // Initialize new matrix
-        ground.matrix.translate(-0.5, -0.5, -0.5); // Center the cube
-        ground.matrix.scale(50, 0.1, 50); // Make it wide and flat
+        // Create a new cube instance for the ground
+        const ground = new Cube();
+        
+        // Set the color of the ground to a solid green
+        ground.color = [0.3, 0.8, 0.2, 1.0];
+        
+        // Set the texture number to -2 to indicate solid color
+        ground.textureNum = -2;
+        
+        // Set the matrix transformations for the ground
+        ground.matrix = new Matrix4();
+        ground.matrix.translate(0, -1, 0);
+        ground.matrix.scale(100, 0.1, 100);
+        ground.matrix.translate(-0.5, 0, -0.5);
+        
+        // Render the ground
         ground.renderfaster();
     }
-
+                
     drawSky() {
-        // Set clear color to sky blue
         gl.clearColor(0.529, 0.808, 0.922, 1.0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     }
@@ -46,20 +63,18 @@ class BlockyWorld {
         for (let x = 0; x < this.worldSize; x++) {
             for (let z = 0; z < this.worldSize; z++) {
                 const height = this.worldMap[x][z];
-                if (height > 0) {
-                    let wall = new Cube();
-                    wall.color = [0.8, 0.8, 0.8, 1.0];
-                    wall.matrix = new Matrix4();
-                    wall.matrix.translate(-0.5, -0.5, -0.5); // Center cube
-                    wall.matrix.scale(1, height, 1); // Scale to height
-                    wall.matrix.translate(x - this.worldSize/2, 0.5, z - this.worldSize/2); // Position in world
-                    wall.renderfaster();
+                for (let y = 0; y < height; y++) {
+                    this.wallCube.matrix = new Matrix4();
+                    this.wallCube.matrix.translate(x - this.worldSize/2, y, z - this.worldSize/2);
+                    this.wallCube.renderfaster();
                 }
             }
         }
     }
-
+    
     render() {
+        const startTime = performance.now();
+
         // Setup matrices
         var projMat = new Matrix4();
         projMat.setPerspective(60, canvas.width/canvas.height, 0.1, 500);
@@ -73,25 +88,19 @@ class BlockyWorld {
         );
         gl.uniformMatrix4fv(u_ViewMatrix, false, viewMat.elements);
 
-        // Set model matrix to identity initially
         var modelMat = new Matrix4();
         gl.uniformMatrix4fv(u_ModelMatrix, false, modelMat.elements);
 
-        // Set rotation matrix
         var rotateMatrix = new Matrix4();
         gl.uniformMatrix4fv(u_GlobalRotateMatrix, false, rotateMatrix.elements);
 
-        // Clear and render everything
+        // Render world
         this.drawSky();
         this.drawGround();
         this.drawWalls();
-        
-        // Draw test cube
-        let testCube = new Cube();
-        testCube.color = [1.0, 0.0, 0.0, 1.0]; // Bright red color
-        testCube.matrix = new Matrix4();
-        testCube.matrix.translate(0, 0, -5); // 5 units in front of camera
-        testCube.matrix.scale(1, 1, 1); // Normal size cube
-        testCube.renderfaster();
+
+        // Calculate and display render time
+        const duration = performance.now() - startTime;
+        sendTextToHTML("ms: " + Math.floor(duration), "numdot");
     }
 }
