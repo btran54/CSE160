@@ -44,97 +44,64 @@ class Vector3 {
       * @return this
       */
     add(other) {
-        // Insert your code here.
-        // This function should change this vector (this.elements) and not create a new vector.
+      for (let i = 0; i < 3; i++) {
+          this.elements[i] += other.elements[i];
+      }
+      return this;
+  }
 
-        // Don't delete the return statement.
-        return this;
-    };
+  sub(other) {
+      for (let i = 0; i < 3; i++) {
+          this.elements[i] -= other.elements[i];
+      }
+      return this;
+  }
 
-    /**
-      * Subtract other from this vector.
-      * @return this
-      */
-    sub(other) {
-        // Insert your code here.
-        // This function should change this vector (this.elements) and not create a new vector.
+  mul(scalar) {
+      for (let i = 0; i < 3; i++) {
+          this.elements[i] *= scalar;
+      }
+      return this;
+  }
 
-        // Don't delete the return statement.
-        return this;
-    };
+  div(scalar) {
+      if (scalar !== 0) {
+          for (let i = 0; i < 3; i++) {
+              this.elements[i] /= scalar;
+          }
+      }
+      return this;
+  }
 
-    /**
-      * Divide this vector by a scalar.
-      * @return this
-      */
-    div(scalar) {
-        // Insert your code here.
-        // This function should change this vector (this.elements) and not create a new vector.
+  magnitude() {
+      return Math.sqrt(
+          this.elements[0] * this.elements[0] +
+          this.elements[1] * this.elements[1] +
+          this.elements[2] * this.elements[2]
+      );
+  }
 
-        // Don't delete the return statement.
-        return this;
-    };
+  normalize() {
+      const m = this.magnitude();
+      if (m > 0) {
+          return this.div(m);
+      }
+      return this;
+  }
 
-    /**
-      * Multiply this vector by a scalar.
-      * @return this
-      */
-    mul(scalar) {
-        // Insert your code here.
-        // This function should change this vector (this.elements) and not create a new vector.
+  static dot(other1, other2) {
+      return other1.elements[0] * other2.elements[0] +
+             other1.elements[1] * other2.elements[1] +
+             other1.elements[2] * other2.elements[2];
+  }
 
-        // Don't delete the return statement.
-        return this;
-    };
-
-    /**
-      * Calcualte the dop product between this vector and other.
-      * @return scalar
-      */
-    static dot(other1, other2) {
-        // Insert your code here.
-        let d = 0; // Modify this line to calculate this vector's magnitude.
-
-        // Don't delete the return statement.
-        return d;
-    }
-
-    /**
-      * Calcualte the cross product between this vector and other.
-      * @return new vector
-      */
-    static cross(other1, other2) {
-        // Insert your code here.
-        // This function should create and return a new vector.
-        let v3 = new Vector3(); // Modify this line to calculate cross product between other1 and other2.
-
-        // Don't delete the return statement.
-        return v3;
-    }
-
-    /**
-      * Calculate the magnitude (or length) of this vector.
-      * @return scalar
-      */
-    magnitude() {
-        // Insert your code here.
-        let m = 0; // Modify this line to calculate this vector's magnitude.
-
-        // Don't delete the return statement.
-        return m;
-    };
-
-    /**
-      * Normalize this vector.
-      * @return this
-      */
-    normalize() {
-        // Insert your code here.
-        // This function should change this vector (this.elements) and not create a new vector.
-
-        // Don't delete the return statement.
-        return this;
-    };
+  static cross(other1, other2) {
+      const v = new Vector3();
+      v.elements[0] = other1.elements[1] * other2.elements[2] - other1.elements[2] * other2.elements[1];
+      v.elements[1] = other1.elements[2] * other2.elements[0] - other1.elements[0] * other2.elements[2];
+      v.elements[2] = other1.elements[0] * other2.elements[1] - other1.elements[1] * other2.elements[0];
+      return v;
+  }
 }
 
 class Vector4 {

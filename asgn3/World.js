@@ -15,17 +15,17 @@ var VSHADER_SOURCE = `
     v_UV = a_UV;
 } `
 
-// In World.js, modify FSHADER_SOURCE
 var FSHADER_SOURCE = `
   precision mediump float;
   varying vec2 v_UV;
   uniform vec4 u_FragColor;
   uniform sampler2D u_Sampler0;
+  uniform sampler2D u_Sampler1;  // Add second sampler for grass
   uniform int u_whichTexture;
 
   void main() {
     if (u_whichTexture == -2) {
-        gl_FragColor = u_FragColor;  // Use the uniform color
+        gl_FragColor = u_FragColor;
     }
     else if (u_whichTexture == -1) {
         gl_FragColor = vec4(v_UV, 1.0, 1.0);
@@ -33,8 +33,11 @@ var FSHADER_SOURCE = `
     else if (u_whichTexture == 0) {
         gl_FragColor = texture2D(u_Sampler0, v_UV);
     }
+    else if (u_whichTexture == 1) {  // Add handling for grass texture
+        gl_FragColor = texture2D(u_Sampler1, v_UV);
+    }
     else {
-        gl_FragColor = u_FragColor;  // Default to uniform color
+        gl_FragColor = vec4(1, 0.2, 0.2, 1);
     }
   } `
 
@@ -49,6 +52,7 @@ let u_ProjectionMatrix;
 let u_ViewMatrix;
 let u_GlobalRotateMatrix;
 let u_Sampler0;
+let u_Sampler1
 let u_whichTexture;
 
 function setupWebGL() {
@@ -121,7 +125,13 @@ function connectVariablesToGLSL() {
       console.log('Failed to get the storage location of the u_Sampler0');
       return false;
   }
-  
+
+  u_Sampler1 = gl.getUniformLocation(gl.program, 'u_Sampler1');
+  if (!u_Sampler1) {
+      console.log('Failed to get the storage location of u_Sampler1');
+      return false;
+  }
+
   u_whichTexture = gl.getUniformLocation(gl.program, 'u_whichTexture');
   if (!u_whichTexture) {
       console.log('Failed to get the storage location of u_whichTexture');
@@ -165,30 +175,36 @@ function addActionsForHtmlUI() {
 }
 
 function initTextures() {
-  var image = new Image();
-  if (!image) {
-      console.log('Failed to create the image object');
+  // Load wall texture
+  var wallImage = new Image();
+  if (!wallImage) {
+      console.log('Failed to create the wall image object');
       return false;
   }
-
-  // Set crossOrigin before setting src
-  image.crossOrigin = 'anonymous';
-
-  // Add loading status callback
-  image.onload = function() { sendImageToTEXTURE0(image); };
-  
-  // Set error handler
-  image.onerror = function() {
-      console.log('Failed to load texture image');
+  wallImage.crossOrigin = 'anonymous';
+  wallImage.onload = function() { sendImageToTexture(wallImage, 0); };
+  wallImage.onerror = function() {
+      console.log('Failed to load wall texture image');
   };
-  
-  // Start loading texture
-  image.src = 'cobblestone.jpg';
+  wallImage.src = 'cobblestone.jpg';
+
+  // Load grass texture
+  var grassImage = new Image();
+  if (!grassImage) {
+      console.log('Failed to create the grass image object');
+      return false;
+  }
+  grassImage.crossOrigin = 'anonymous';
+  grassImage.onload = function() { sendImageToTexture(grassImage, 1); };
+  grassImage.onerror = function() {
+      console.log('Failed to load grass texture image');
+  };
+  grassImage.src = 'grass.jpg';
 
   return true;
 }
 
-function sendImageToTEXTURE0(image) {
+function sendImageToTexture(image, textureUnit) {
   var texture = gl.createTexture();
   if (!texture) {
       console.log('Failed to create the texture object');
@@ -196,7 +212,7 @@ function sendImageToTEXTURE0(image) {
   }
 
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
-  gl.activeTexture(gl.TEXTURE0);
+  gl.activeTexture(textureUnit === 0 ? gl.TEXTURE0 : gl.TEXTURE1);
   gl.bindTexture(gl.TEXTURE_2D, texture);
 
   // Set texture parameters
@@ -207,14 +223,17 @@ function sendImageToTEXTURE0(image) {
 
   try {
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
-      gl.uniform1i(u_Sampler0, 0);
-      console.log('Texture loaded successfully');
+      gl.uniform1i(textureUnit === 0 ? u_Sampler0 : u_Sampler1, textureUnit);
+      console.log(`Texture ${textureUnit} loaded successfully`);
   } catch (e) {
-      console.error('Error loading texture:', e);
+      console.error(`Error loading texture ${textureUnit}:`, e);
   }
 }
 
 let g_blockyWorld;
+let g_isLeftMouseDown = false;
+let g_lastMouseX = null;
+let g_lastMouseY = null;
 
 function main() {
   setupWebGL();
@@ -222,6 +241,9 @@ function main() {
 //   addActionsForHtmlUI();
   g_blockyWorld = new BlockyWorld();
   document.onkeydown = keydown;
+  canvas.onmousedown = function(ev) { mousedown(ev); };
+  canvas.onmouseup = function(ev) { mouseup(ev); };
+  canvas.onmousemove = function(ev) { mousemove(ev); };
 
   initTextures(gl, 0);
 
@@ -231,32 +253,62 @@ function main() {
   requestAnimationFrame(tick);
 }
 
-// Update the angles of everything if currently animated
-function updateAnimationAngles() {
-    
+function keydown(ev) {
+  switch(ev.code) {
+      case 'KeyW':
+          g_blockyWorld.camera.forward(g_blockyWorld.worldMap);
+          break;
+      case 'KeyS':
+          g_blockyWorld.camera.back(g_blockyWorld.worldMap);
+          break;
+      case 'KeyA':
+          g_blockyWorld.camera.left(g_blockyWorld.worldMap);
+          break;
+      case 'KeyD':
+          g_blockyWorld.camera.right(g_blockyWorld.worldMap);
+          break;
+      case 'KeyQ':
+          g_blockyWorld.camera.rotateRight();
+          break;
+      case 'KeyE':
+          g_blockyWorld.camera.rotateLeft();
+          break;
+  }
 }
 
-function keydown(ev) {
-    switch(ev.code) {
-        case 'KeyW':
-            g_blockyWorld.camera.forward(g_blockyWorld.worldMap);
-            break;
-        case 'KeyS':
-            g_blockyWorld.camera.back(g_blockyWorld.worldMap);
-            break;
-        case 'KeyA':
-            g_blockyWorld.camera.left(g_blockyWorld.worldMap);
-            break;
-        case 'KeyD':
-            g_blockyWorld.camera.right(g_blockyWorld.worldMap);
-            break;
-        case 'KeyQ':
-            g_blockyWorld.camera.rotateRight();
-            break;
-        case 'KeyE':
-            g_blockyWorld.camera.rotateLeft();
-            break;
-    }
+function mousedown(ev) {
+  if (ev.button === 0) { // Left mouse button
+      g_isLeftMouseDown = true;
+  }
+}
+
+function mouseup(ev) {
+  if (ev.button === 0) { // Left mouse button
+      g_isLeftMouseDown = false;
+      g_lastMouseX = null;
+      g_lastMouseY = null;
+  }
+}
+
+function mousemove(ev) {
+  if (!g_isLeftMouseDown) return;
+
+  if (g_lastMouseX === null) {
+      g_lastMouseX = ev.clientX;
+      g_lastMouseY = ev.clientY;
+      return;
+  }
+
+  let newX = ev.clientX;
+  let newY = ev.clientY;
+
+  let deltaX = newX - g_lastMouseX;
+  let deltaY = newY - g_lastMouseY;
+
+  g_lastMouseX = newX;
+  g_lastMouseY = newY;
+
+  g_blockyWorld.camera.mouseRotate(deltaX, deltaY);
 }
 
 var g_startTime = performance.now()/1000.0;
@@ -320,11 +372,6 @@ function convertCoordinatesEventToGL(ev) {
   return ([x, y]);
 }
 
-// var g_eye = [0, 0, 3];
-// var g_at = [0, 0, -100];
-// var g_up = [0, 1, 0];
-var g_camera = new Camera();
-
 var g_map = [
     [1, 1, 1, 1, 1, 1, 1, 1],
     [1, 0, 0, 0, 0, 0, 0, 1],
@@ -361,11 +408,16 @@ function renderAllShapes() {
   gl.uniformMatrix4fv(u_ProjectionMatrix, false, projMat.elements);
 
   var viewMat = new Matrix4();
-//   viewMat.setLookAt(g_eye[0], g_eye[1], g_eye[2], g_at[0], g_at[1], g_at[2], g_up[0], g_up[1], g_up[2]); // (eye, at, up)
   viewMat.setLookAt(
-    g_camera.eye.x, g_camera.eye.y, g_camera.eye.z,
-    g_camera.at.x, g_camera.at.y, g_camera.at.z,
-    g_camera.up.x, g_camera.up.y, g_camera.up.z
+    g_blockyWorld.camera.eye.elements[0], 
+    g_blockyWorld.camera.eye.elements[1], 
+    g_blockyWorld.camera.eye.elements[2],
+    g_blockyWorld.camera.at.elements[0], 
+    g_blockyWorld.camera.at.elements[1], 
+    g_blockyWorld.camera.at.elements[2],
+    g_blockyWorld.camera.up.elements[0], 
+    g_blockyWorld.camera.up.elements[1], 
+    g_blockyWorld.camera.up.elements[2]
   );
   gl.uniformMatrix4fv(u_ViewMatrix, false, viewMat.elements);
 

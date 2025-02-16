@@ -6,6 +6,9 @@ class Camera {
         this.moveStep = 0.2;
         this.rotateStep = 3;
         this.collisionRadius = 0.5;
+        this.mouseSensitivity = 0.1;
+        this.yaw = -90;
+        this.pitch = 0;
     }
 
     checkCollision(newX, newZ, worldMap) {
@@ -162,7 +165,7 @@ class Camera {
         this.at.elements[0] = this.eye.elements[0] + newDx;
         this.at.elements[2] = this.eye.elements[2] + newDz;
     }
-
+    
     rotateRight() {
         let angle = -this.rotateStep * Math.PI / 180;
         let dx = this.at.elements[0] - this.eye.elements[0];
@@ -173,5 +176,27 @@ class Camera {
         
         this.at.elements[0] = this.eye.elements[0] + newDx;
         this.at.elements[2] = this.eye.elements[2] + newDz;
+    }
+
+    mouseRotate(deltaX, deltaY) {
+        this.yaw += deltaX * this.mouseSensitivity;
+        this.pitch -= deltaY * this.mouseSensitivity;
+        this.pitch = Math.min(89, Math.max(-89, this.pitch));
+        this.updateOrientation();
+    }
+
+    updateOrientation() {
+        const front = new Vector3([
+            Math.cos(this.yaw * Math.PI / 180) * Math.cos(this.pitch * Math.PI / 180),
+            Math.sin(this.pitch * Math.PI / 180),
+            Math.sin(this.yaw * Math.PI / 180) * Math.cos(this.pitch * Math.PI / 180)
+        ]);
+        front.normalize();
+    
+        this.at = new Vector3([
+            this.eye.elements[0] + front.elements[0],
+            this.eye.elements[1] + front.elements[1],
+            this.eye.elements[2] + front.elements[2]
+        ]);
     }
 }
