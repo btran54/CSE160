@@ -13,60 +13,89 @@ class BlockyWorld {
         
         this.groundCube = new Cube();
         this.groundCube.textureNum = 1;
-
+    
         this.chestCube = new Cube();
         this.chestCube.textureNum = 2;      
         this.centerX = Math.floor(this.worldSize / 2);
         this.centerZ = Math.floor(this.worldSize / 2);
-
-        this.gameState = 'playing'; // can be 'playing', 'won', or 'died'
+    
+        this.gameState = 'playing';
         this.gameEndText = '';
         this.gameEndColor = '';
-
-        // Add event listener for chest interaction
+    
+        // Create reset button
+        const resetButton = document.createElement('button');
+        resetButton.textContent = 'Reset Game';
+        resetButton.className = 'reset-button';
+        resetButton.onclick = () => this.resetGame();
+        document.querySelector('.canvas-container').appendChild(resetButton);
+    
+        // Add chest interaction
         canvas.addEventListener('mousedown', (e) => {
-            if (e.shiftKey && e.button === 0) { // Shift + Left Click
+            if (e.shiftKey && e.button === 0) {
                 this.checkChestInteraction();
             }
         });
-
+    
         // FOV control
-        this.fov = 60; // Default FOV
-
-        // Add zoom controls
+        this.fov = 60;
         document.getElementById('zoomIn').onclick = () => {
-            this.fov = Math.max(this.fov - 5, 30); // Minimum FOV of 30
+            this.fov = Math.max(this.fov - 5, 30);
         };
         document.getElementById('zoomOut').onclick = () => {
-            this.fov = Math.min(this.fov + 5, 90); // Maximum FOV of 90
+            this.fov = Math.min(this.fov + 5, 90);
         };
-
+    
         this.worldMap = this.createMazeMap();
     }
-
+    
+    resetGame() {
+        // Reset game state
+        this.gameState = 'playing';
+        this.gameEndText = '';
+        this.gameEndColor = '';
+        
+        // Reset camera position
+        this.camera.eye = new Vector3([0, 2, 10]);
+        this.camera.at = new Vector3([0, 0, -100]);
+        this.camera.up = new Vector3([0, 1, 0]);
+        
+        // Reset FOV
+        this.fov = 60;
+        
+        // Generate new maze
+        this.worldMap = this.createMazeMap();
+    }
+    
     checkChestInteraction() {
+        console.log("Checking chest interaction");
         if (this.gameState !== 'playing') return;
-
+    
         // Calculate distance to chest
         const playerX = this.camera.eye.elements[0];
         const playerZ = this.camera.eye.elements[2];
         const chestX = this.centerX - this.worldSize/2;
         const chestZ = this.centerZ - this.worldSize/2;
-
+    
         const distance = Math.sqrt(
             Math.pow(playerX - chestX, 2) + 
             Math.pow(playerZ - chestZ, 2)
         );
-
+    
+        console.log("Distance to chest:", distance);
+    
         if (distance <= 1.5) { // Within ~1 cube distance
+            console.log("Within range!");
             // 50/50 chance of winning or dying
             if (Math.random() < 0.5) {
+                console.log("Won!");
                 this.gameState = 'won';
-                this.gameEndColor = '#8B8000'; // Dark yellow
+                this.gameEndColor = '#8B8000';
                 this.gameEndText = 'You Won!';
             } else {
+                console.log("Died!");
                 this.gameState = 'died';
-                this.gameEndColor = '#FF0000'; // Red
+                this.gameEndColor = '#FF0000';
                 this.gameEndText = 'You Died';
             }
         }
@@ -184,31 +213,43 @@ class BlockyWorld {
     }
 
     render() {
+    if (this.gameState !== 'playing') {
+        // Clear canvas with game end color
+        gl.clearColor(
+            this.gameState === 'died' ? 0.0 : 0.545,  // Red component: 0 if died, 0.545 if won
+            this.gameState === 'died' ? 0.0 : 0.545,  // Green component: 0 if died, 0.545 if won
+            0.0,                                       // Blue component: always 0
+            1.0                                        // Alpha: always 1
+        );
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        if (this.gameState !== 'playing') {
-            // Clear canvas with game end color
-            gl.clearColor(
-                this.gameState === 'died' ? 0.0 : 0.545, // Dark yellow if won
-                this.gameState === 'died' ? 0.0 : 0.545,
-                0.0,
-                1.0
-            );
-            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    
-            // Draw text using canvas 2D context
-            const ctx = canvas.getContext('2d');
-            ctx.font = 'bold 48px Arial';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillStyle = this.gameState === 'died' ? '#FF0000' : '#0000FF';  // Changed to blue for win
-            ctx.fillText(
-                this.gameEndText,
-                canvas.width / 2,
-                canvas.height / 2
-            );
-            return;
-        }
-        
+        // Save WebGL state
+        gl.finish();
+
+        // Get 2D context and preserve it
+        const ctx = canvas.getContext('2d', { preserveDrawingBuffer: true });
+        ctx.save();
+
+        // Clear any existing 2D content
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw text
+        ctx.font = 'bold 48px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = this.gameState === 'died' ? '#FF0000' : '#0000FF';
+        ctx.fillText(
+            this.gameEndText,
+            canvas.width / 2,
+            canvas.height / 2
+        );
+
+        // Restore contexts
+        ctx.restore();
+        gl = canvas.getContext('webgl', { preserveDrawingBuffer: true });
+        return;
+    }
+
         const startTime = performance.now();
 
         // Main view rendering with FOV
