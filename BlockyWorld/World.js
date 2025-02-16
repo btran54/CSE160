@@ -56,23 +56,19 @@ let u_Sampler1
 let u_whichTexture;
 
 function setupWebGL() {
-  // Retrieve <canvas> element
   canvas = document.getElementById('webgl');
   
-  // Set canvas to fill page width
   canvas.style.width = '80%';
   canvas.style.height = 'auto';
   canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight * 0.8; // 80% of viewport height
+  canvas.height = window.innerHeight * 0.8;
   
-  // Handle window resize
   window.addEventListener('resize', function() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight * 0.8;
       gl.viewport(0, 0, canvas.width, canvas.height);
   });
 
-  // Get the rendering context for WebGL
   gl = canvas.getContext("webgl", {preserveDrawingBuffer: true});
   if (!gl) {
       console.log('Failed to get the rendering context for WebGL');
@@ -90,7 +86,6 @@ function connectVariablesToGLSL() {
     return;
   }
 
-  // // Get the storage location of a_Position
   a_Position = gl.getAttribLocation(gl.program, 'a_Position');
   if (a_Position < 0) {
     console.log('Failed to get the storage location of a_Position');
@@ -164,31 +159,7 @@ let g_selectedSize = 5;
 let g_selectedType = POINT;
 let g_selectedSegments = 10;
 
-function addActionsForHtmlUI() {
-//   document.getElementById('green').onclick = function() {g_selectedColor = [0.0, 1.0, 0.0, 1.0];};
-//   document.getElementById('red').onclick = function() {g_selectedColor = [1.0, 0.0, 0.0, 1.0];};
-//   document.getElementById('clearButton').onclick = function() {g_shapesList=[]; renderAllShapes();};
-//   document.getElementById('drawBirdButton').onclick = function() {g_shapesList = []; drawBird();};
-
-//   document.getElementById('pointButton').onclick = function() {g_selectedType=POINT};
-//   document.getElementById('triButton').onclick = function() {g_selectedType=TRIANGLE};
-//   document.getElementById('circleButton').onclick = function() {g_selectedType=CIRCLE};
-
-
-//   // Color Slider Events
-//   document.getElementById('redSlide').addEventListener('mouseup', function() {g_selectedColor[0] = this.value/100;});
-//   document.getElementById('greenSlide').addEventListener('mouseup', function() {g_selectedColor[1] = this.value/100;});
-//   document.getElementById('blueSlide').addEventListener('mouseup', function() {g_selectedColor[2] = this.value/100;});
-
-//   // Size Slider Events
-//   document.getElementById('sizeSlide').addEventListener('mouseup', function() {g_selectedSize = this.value;});
-
-//   // Segment Slider Events
-//   document.getElementById('segmentSlide').addEventListener('mouseup', function() {g_selectedSegments = this.value;});
-}
-
 function initTextures() {
-  // Load wall texture
   var wallImage = new Image();
   if (!wallImage) {
       console.log('Failed to create the wall image object');
@@ -201,7 +172,6 @@ function initTextures() {
   };
   wallImage.src = 'cobblestone.jpg';
 
-  // Load grass texture
   var grassImage = new Image();
   if (!grassImage) {
       console.log('Failed to create the grass image object');
@@ -228,7 +198,6 @@ function sendImageToTexture(image, textureUnit) {
   gl.activeTexture(textureUnit === 0 ? gl.TEXTURE0 : gl.TEXTURE1);
   gl.bindTexture(gl.TEXTURE_2D, texture);
 
-  // Set texture parameters
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
@@ -251,7 +220,6 @@ let g_lastMouseY = null;
 function main() {
   setupWebGL();
   connectVariablesToGLSL();
-//   addActionsForHtmlUI();
   g_blockyWorld = new BlockyWorld();
   document.onkeydown = keydown;
   canvas.onmousedown = function(ev) { mousedown(ev); };
@@ -260,7 +228,6 @@ function main() {
 
   initTextures(gl, 0);
 
-  // Specify the color for clearing <canvas>
   gl.clearColor(0.0, 0.0, 0.0, 1.0);
 
   requestAnimationFrame(tick);
@@ -342,7 +309,6 @@ function tick() {
         g_lastFPSUpdate = now;
     }
 
-    // Render the scene
     g_blockyWorld.render();
     requestAnimationFrame(tick);
 }

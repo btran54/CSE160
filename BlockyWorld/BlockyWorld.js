@@ -6,10 +6,8 @@ class BlockyWorld {
         this.camera.at = new Vector3([0, 0, -100]);
         this.camera.up = new Vector3([0, 1, 0]);
         
-        // World size parameters (use odd number for maze generation)
         this.worldSize = 31;
         
-        // Pre-create cube instances for reuse
         this.wallCube = new Cube();
         this.wallCube.textureNum = 0;
         
@@ -27,36 +25,29 @@ class BlockyWorld {
             this.fov = Math.min(this.fov + 5, 90); // Maximum FOV of 90
         };
 
-        // Create the maze map
         this.worldMap = this.createMazeMap();
     }
 
-    // (All the other methods remain unchanged, removing drawMiniMap)
     createMazeMap() {
-        // Initialize array with walls (1 represents wall, 0 represents path)
         let map = Array(this.worldSize).fill().map(() => Array(this.worldSize).fill(1));
         
-        // Start maze generation from the entrance
         const startX = 1;
         const startY = 1;
         this.generateMaze(map, startX, startY);
         
-        // Create entrance
         map[1][0] = 0;
-        // map[2][0] = 0; // Make entrance 2 blocks wide
         
         // Create an empty 5x5 area in the center
         const centerX = Math.floor(this.worldSize / 2);
         const centerZ = Math.floor(this.worldSize / 2);
         
-        // Clear a 5x5 area by removing all walls
         for(let x = -2; x <= 2; x++) {
             for(let z = -2; z <= 2; z++) {
                 const goalX = centerX + x;
                 const goalZ = centerZ + z;
                 if (goalX >= 0 && goalX < this.worldSize && 
                     goalZ >= 0 && goalZ < this.worldSize) {
-                    map[goalX][goalZ] = 0; // Make it an empty space
+                    map[goalX][goalZ] = 0;
                 }
             }
         }
@@ -65,9 +56,7 @@ class BlockyWorld {
     }
 
     generateMaze(map, x, y) {
-        // Mark current cell and adjacent cell as path
         map[x][y] = 0;
-        // map[x+1][y] = 0; // Make horizontal path 2 blocks wide
         
         // Define possible directions (right, down, left, up)
         const directions = [
@@ -95,15 +84,12 @@ class BlockyWorld {
                 
                 // Carve path through wall
                 map[wallX][wallY] = 0;
-                // map[wallX+1][wallY] = 0; // Make horizontal path 2 blocks wide
                 
                 // For vertical paths, carve adjacent vertical path
                 if (dx !== 0) {
                     map[wallX][wallY] = 0;
-                    // map[wallX+1][wallY] = 0;
                 }
                 
-                // Continue maze generation from new position
                 this.generateMaze(map, newX, newY);
             }
         }
@@ -134,12 +120,10 @@ class BlockyWorld {
             for (let z = 0; z < this.worldSize; z++) {
                 const cellType = this.worldMap[x][z];
                 if (cellType === 1) {  // Wall
-                    // Draw bottom cube
                     this.wallCube.matrix = new Matrix4();
                     this.wallCube.matrix.translate(x - this.worldSize/2, 0, z - this.worldSize/2);
                     this.wallCube.renderfaster();
                     
-                    // Draw top cube
                     this.wallCube.matrix = new Matrix4();
                     this.wallCube.matrix.translate(x - this.worldSize/2, 1, z - this.worldSize/2);
                     this.wallCube.renderfaster();
@@ -174,7 +158,6 @@ class BlockyWorld {
         var rotateMatrix = new Matrix4();
         gl.uniformMatrix4fv(u_GlobalRotateMatrix, false, rotateMatrix.elements);
 
-        // Render scene components
         this.drawSky();
         this.drawGround();
         this.drawWalls();

@@ -5,7 +5,6 @@ class Cube {
         this.matrix = new Matrix4();
         this.textureNum = -2;
 
-        // Combined vertices and UV coordinates (x,y,z, u,v for each vertex)
         this.cubeVerts32 = new Float32Array([
             // Front
             0,0,0, 0,0,    1,1,0, 1,1,    1,0,0, 1,0,
@@ -60,7 +59,6 @@ class Cube {
         drawTriangle3DUV([0,0,0, 1,0,1, 0,0,1], [0,0, 1,1, 0,1]);
     }
 
-    // Update the renderfast() method in Cube.js
     renderfast() {
         var rgba = this.color;
         gl.uniform1i(u_whichTexture, this.textureNum);
@@ -78,7 +76,6 @@ class Cube {
         gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, FSIZE * 5, 0);
         gl.enableVertexAttribArray(a_Position);
 
-        // Only enable UV coordinates if we're using a texture
         if (this.textureNum !== -2) {
             gl.vertexAttribPointer(a_UV, 2, gl.FLOAT, false, FSIZE * 5, FSIZE * 3);
             gl.enableVertexAttribArray(a_UV);
