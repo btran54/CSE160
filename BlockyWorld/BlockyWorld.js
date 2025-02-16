@@ -14,6 +14,12 @@ class BlockyWorld {
         this.groundCube = new Cube();
         this.groundCube.textureNum = 1;
 
+        // Add chest cube
+        this.chestCube = new Cube();
+        this.chestCube.textureNum = 0; // We'll change this texture later
+        this.centerX = Math.floor(this.worldSize / 2);
+        this.centerZ = Math.floor(this.worldSize / 2);
+
         // FOV control
         this.fov = 60; // Default FOV
 
@@ -38,13 +44,10 @@ class BlockyWorld {
         map[1][0] = 0;
         
         // Create an empty 5x5 area in the center
-        const centerX = Math.floor(this.worldSize / 2);
-        const centerZ = Math.floor(this.worldSize / 2);
-        
         for(let x = -2; x <= 2; x++) {
             for(let z = -2; z <= 2; z++) {
-                const goalX = centerX + x;
-                const goalZ = centerZ + z;
+                const goalX = this.centerX + x;
+                const goalZ = this.centerZ + z;
                 if (goalX >= 0 && goalX < this.worldSize && 
                     goalZ >= 0 && goalZ < this.worldSize) {
                     map[goalX][goalZ] = 0;
@@ -136,6 +139,12 @@ class BlockyWorld {
         }
     }
 
+    drawChest() {
+        this.chestCube.matrix = new Matrix4();
+        this.chestCube.matrix.translate(this.centerX - this.worldSize/2, 0, this.centerZ - this.worldSize/2);
+        this.chestCube.renderfaster();
+    }
+
     render() {
         const startTime = performance.now();
 
@@ -161,6 +170,7 @@ class BlockyWorld {
         this.drawSky();
         this.drawGround();
         this.drawWalls();
+        this.drawChest();
 
         const duration = performance.now() - startTime;
         sendTextToHTML("ms: " + Math.floor(duration), "numdot");
