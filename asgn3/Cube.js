@@ -92,7 +92,6 @@ class Cube {
     renderfaster() {
         var rgba = this.color;
         gl.uniform1i(u_whichTexture, this.textureNum);
-        console.log("Sending color to shader:", rgba);
         gl.uniform4f(u_FragColor, rgba[0], rgba[1], rgba[2], rgba[3]);
         gl.uniformMatrix4fv(u_ModelMatrix, false, this.matrix.elements);
     
