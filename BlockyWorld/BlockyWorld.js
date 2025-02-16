@@ -19,6 +19,17 @@ class BlockyWorld {
         this.centerX = Math.floor(this.worldSize / 2);
         this.centerZ = Math.floor(this.worldSize / 2);
 
+        this.gameState = 'playing'; // can be 'playing', 'won', or 'died'
+        this.gameEndText = '';
+        this.gameEndColor = '';
+
+        // Add event listener for chest interaction
+        canvas.addEventListener('mousedown', (e) => {
+            if (e.shiftKey && e.button === 0) { // Shift + Left Click
+                this.checkChestInteraction();
+            }
+        });
+
         // FOV control
         this.fov = 60; // Default FOV
 
@@ -31,6 +42,34 @@ class BlockyWorld {
         };
 
         this.worldMap = this.createMazeMap();
+    }
+
+    checkChestInteraction() {
+        if (this.gameState !== 'playing') return;
+
+        // Calculate distance to chest
+        const playerX = this.camera.eye.elements[0];
+        const playerZ = this.camera.eye.elements[2];
+        const chestX = this.centerX - this.worldSize/2;
+        const chestZ = this.centerZ - this.worldSize/2;
+
+        const distance = Math.sqrt(
+            Math.pow(playerX - chestX, 2) + 
+            Math.pow(playerZ - chestZ, 2)
+        );
+
+        if (distance <= 1.5) { // Within ~1 cube distance
+            // 50/50 chance of winning or dying
+            if (Math.random() < 0.5) {
+                this.gameState = 'won';
+                this.gameEndColor = '#8B8000'; // Dark yellow
+                this.gameEndText = 'You Won!';
+            } else {
+                this.gameState = 'died';
+                this.gameEndColor = '#FF0000'; // Red
+                this.gameEndText = 'You Died';
+            }
+        }
     }
 
     createMazeMap() {
@@ -145,6 +184,31 @@ class BlockyWorld {
     }
 
     render() {
+
+        if (this.gameState !== 'playing') {
+            // Clear canvas with game end color
+            gl.clearColor(
+                this.gameState === 'died' ? 0.0 : 0.545, // Dark yellow if won
+                this.gameState === 'died' ? 0.0 : 0.545,
+                0.0,
+                1.0
+            );
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    
+            // Draw text using canvas 2D context
+            const ctx = canvas.getContext('2d');
+            ctx.font = 'bold 48px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = this.gameState === 'died' ? '#FF0000' : '#0000FF';  // Changed to blue for win
+            ctx.fillText(
+                this.gameEndText,
+                canvas.width / 2,
+                canvas.height / 2
+            );
+            return;
+        }
+        
         const startTime = performance.now();
 
         // Main view rendering with FOV
