@@ -15,12 +15,14 @@ var VSHADER_SOURCE = `
     v_UV = a_UV;
 } `
 
+// In FSHADER_SOURCE, add a new sampler and case:
 var FSHADER_SOURCE = `
   precision mediump float;
   varying vec2 v_UV;
   uniform vec4 u_FragColor;
-  uniform sampler2D u_Sampler0;
-  uniform sampler2D u_Sampler1;  // Add second sampler for grass
+  uniform sampler2D u_Sampler0; // Ground
+  uniform sampler2D u_Sampler1; // Walls
+  uniform sampler2D u_Sampler2; // Chest
   uniform int u_whichTexture;
 
   void main() {
@@ -33,8 +35,11 @@ var FSHADER_SOURCE = `
     else if (u_whichTexture == 0) {
         gl_FragColor = texture2D(u_Sampler0, v_UV);
     }
-    else if (u_whichTexture == 1) {  // Add handling for grass texture
+    else if (u_whichTexture == 1) {
         gl_FragColor = texture2D(u_Sampler1, v_UV);
+    }
+    else if (u_whichTexture == 2) {
+        gl_FragColor = texture2D(u_Sampler2, v_UV);
     }
     else {
         gl_FragColor = vec4(1, 0.2, 0.2, 1);
@@ -52,7 +57,8 @@ let u_ProjectionMatrix;
 let u_ViewMatrix;
 let u_GlobalRotateMatrix;
 let u_Sampler0;
-let u_Sampler1
+let u_Sampler1;
+let u_Sampler2
 let u_whichTexture;
 
 function setupWebGL() {
@@ -140,6 +146,12 @@ function connectVariablesToGLSL() {
       return false;
   }
 
+  u_Sampler2 = gl.getUniformLocation(gl.program, 'u_Sampler2');
+  if (!u_Sampler2) {
+      console.log('Failed to get the storage location of u_Sampler2');
+      return false;
+  }
+
   u_whichTexture = gl.getUniformLocation(gl.program, 'u_whichTexture');
   if (!u_whichTexture) {
       console.log('Failed to get the storage location of u_whichTexture');
@@ -183,6 +195,18 @@ function initTextures() {
       console.log('Failed to load grass texture image');
   };
   grassImage.src = 'grass.jpg';
+
+  var chestImage = new Image();
+  if (!chestImage) {
+      console.log('Failed to create the chest image object');
+      return false;
+  }
+  chestImage.crossOrigin = 'anonymous';
+  chestImage.onload = function() { sendImageToTexture(chestImage, 2); };
+  chestImage.onerror = function() {
+      console.log('Failed to load chest texture image');
+  };
+  chestImage.src = 'chest.jpg';
 
   return true;
 }

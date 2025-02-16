@@ -14,9 +14,8 @@ class BlockyWorld {
         this.groundCube = new Cube();
         this.groundCube.textureNum = 1;
 
-        // Add chest cube
         this.chestCube = new Cube();
-        this.chestCube.textureNum = 0; // We'll change this texture later
+        this.chestCube.textureNum = 2;      
         this.centerX = Math.floor(this.worldSize / 2);
         this.centerZ = Math.floor(this.worldSize / 2);
 
