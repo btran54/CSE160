@@ -66,7 +66,7 @@ class BlockyWorld {
         // Generate new maze
         this.worldMap = this.createMazeMap();
     }
-    
+
     checkChestInteraction() {
         console.log("Checking chest interaction");
         if (this.gameState !== 'playing') return;
@@ -223,33 +223,25 @@ class BlockyWorld {
         );
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        // Save WebGL state
-        gl.finish();
-
-        // Get 2D context and preserve it
-        const ctx = canvas.getContext('2d', { preserveDrawingBuffer: true });
-        ctx.save();
-
-        // Clear any existing 2D content
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        // Draw text
-        ctx.font = 'bold 48px Arial';
+        // Get canvas context for 2D
+        const ctx = canvas.getContext('2d');
+        
+        // Set up text properties
+        ctx.font = 'bold 72px Arial'; // Made font bigger
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = this.gameState === 'died' ? '#FF0000' : '#0000FF';
+        
+        // Draw the text
         ctx.fillText(
             this.gameEndText,
             canvas.width / 2,
             canvas.height / 2
         );
 
-        // Restore contexts
-        ctx.restore();
-        gl = canvas.getContext('webgl', { preserveDrawingBuffer: true });
+        // Don't restore WebGL context here - let it stay in 2D for the end screen
         return;
     }
-
         const startTime = performance.now();
 
         // Main view rendering with FOV
