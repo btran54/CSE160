@@ -33,11 +33,21 @@ class BlockyWorld {
         map[1][0] = 0;
         map[2][0] = 0; // Make entrance 2 blocks wide
         
-        // Mark the center as the goal
+        // Create a 5x5 goal area in the center
         const centerX = Math.floor(this.worldSize / 2);
-        const centerY = Math.floor(this.worldSize / 2);
-        map[centerX][centerY] = 2;
-        map[centerX+1][centerY] = 2; // Make goal area 2 blocks wide
+        const centerZ = Math.floor(this.worldSize / 2);
+        
+        // Clear a 5x5 area
+        for(let x = -2; x <= 2; x++) {
+            for(let z = -2; z <= 2; z++) {
+                const goalX = centerX + x;
+                const goalZ = centerZ + z;
+                if (goalX >= 0 && goalX < this.worldSize && 
+                    goalZ >= 0 && goalZ < this.worldSize) {
+                    map[goalX][goalZ] = 2; // Mark as goal area
+                }
+            }
+        }
         
         return map;
     }
@@ -116,12 +126,12 @@ class BlockyWorld {
                     this.wallCube.matrix.translate(x - this.worldSize/2, 0, z - this.worldSize/2);
                     this.wallCube.renderfaster();
                 }
-                else if (cellType === 2) {  // Goal
+                else if (cellType === 2) {  // Goal area
                     this.wallCube.matrix = new Matrix4();
-                    this.wallCube.matrix.translate(x - this.worldSize/2, 0, z - this.worldSize/2);
-                    this.wallCube.matrix.scale(1, 2, 1);
+                    this.wallCube.matrix.translate(x - this.worldSize/2, -0.5, z - this.worldSize/2);
+                    this.wallCube.matrix.scale(1, 0.1, 1); // Make it flat
                     const originalColor = this.wallCube.color;
-                    this.wallCube.color = [1.0, 0.84, 0.0, 1.0];
+                    this.wallCube.color = [1.0, 0.84, 0.0, 1.0]; // Gold color
                     this.wallCube.renderfaster();
                     this.wallCube.color = originalColor;
                 }
