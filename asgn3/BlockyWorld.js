@@ -12,11 +12,10 @@ class BlockyWorld {
 
         // Pre-create cube instances for reuse
         this.wallCube = new Cube();
-        this.wallCube.textureNum = 0;
+        this.wallCube.textureNum = 0;  // Wall texture
         
         this.groundCube = new Cube();
-        this.groundCube.textureNum = -2;
-        this.groundCube.color = [0.3, 0.8, 0.2, 1.0];
+        this.groundCube.textureNum = 1;  // Grass texture
     }
 
     createWorldMap() {
@@ -35,25 +34,12 @@ class BlockyWorld {
     }
 
     drawGround() {
-        // Create a new cube instance for the ground
-        const ground = new Cube();
-        
-        // Set the color of the ground to a solid green
-        ground.color = [0.3, 0.8, 0.2, 1.0];
-        
-        // Set the texture number to -2 to indicate solid color
-        ground.textureNum = -2;
-        
-        // Set the matrix transformations for the ground
-        ground.matrix = new Matrix4();
-        ground.matrix.translate(0, -1, 0);
-        ground.matrix.scale(100, 0.1, 100);
-        ground.matrix.translate(-0.5, 0, -0.5);
-        
-        // Render the ground
-        ground.renderfaster();
+        this.groundCube.matrix = new Matrix4();
+        this.groundCube.matrix.translate(-this.worldSize/2, -0.5, -this.worldSize/2);
+        this.groundCube.matrix.scale(this.worldSize, 0.1, this.worldSize);
+        this.groundCube.renderfaster();
     }
-                
+    
     drawSky() {
         gl.clearColor(0.529, 0.808, 0.922, 1.0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
