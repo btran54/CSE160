@@ -5,7 +5,7 @@ class Camera {
         this.up = new Vector3([0, 1, 0]);
         this.moveStep = 0.2;
         this.rotateStep = 3;
-        this.collisionRadius = 0.5;
+        this.collisionRadius = 0.3; // Reduced from 0.5 to allow easier movement
         this.mouseSensitivity = 0.1;
         this.yaw = -90;
         this.pitch = 0;
@@ -15,6 +15,7 @@ class Camera {
         const gridX = Math.floor(newX + worldMap.length/2);
         const gridZ = Math.floor(newZ + worldMap.length/2);
         
+        // Check immediate surrounding cells
         for(let dx = -1; dx <= 1; dx++) {
             for(let dz = -1; dz <= 1; dz++) {
                 const checkX = gridX + dx;
@@ -26,11 +27,17 @@ class Camera {
                         const wallCenterX = checkX - worldMap.length/2 + 0.5;
                         const wallCenterZ = checkZ - worldMap.length/2 + 0.5;
                         
+                        // Calculate distance to wall center
                         const dx = newX - wallCenterX;
                         const dz = newZ - wallCenterZ;
                         const distance = Math.sqrt(dx*dx + dz*dz);
                         
-                        if (distance < this.collisionRadius + 0.5) {
+                        // More lenient collision check
+                        if (distance < this.collisionRadius + 0.4) { // Reduced from 0.5
+                            // Additional check for diagonal movement
+                            if (Math.abs(dx) > 0.3 && Math.abs(dz) > 0.3) {
+                                continue; // Allow diagonal movement if not too close
+                            }
                             return true;
                         }
                     }
