@@ -58,7 +58,7 @@ let u_ViewMatrix;
 let u_GlobalRotateMatrix;
 let u_Sampler0;
 let u_Sampler1;
-let u_Sampler2
+let u_Sampler2;
 let u_whichTexture;
 
 function setupWebGL() {
@@ -219,7 +219,20 @@ function sendImageToTexture(image, textureUnit) {
   }
 
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
-  gl.activeTexture(textureUnit === 0 ? gl.TEXTURE0 : gl.TEXTURE1);
+  
+  // Fix texture unit selection
+  switch(textureUnit) {
+      case 0:
+          gl.activeTexture(gl.TEXTURE0);
+          break;
+      case 1:
+          gl.activeTexture(gl.TEXTURE1);
+          break;
+      case 2:
+          gl.activeTexture(gl.TEXTURE2);
+          break;
+  }
+  
   gl.bindTexture(gl.TEXTURE_2D, texture);
 
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -229,7 +242,9 @@ function sendImageToTexture(image, textureUnit) {
 
   try {
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
-      gl.uniform1i(textureUnit === 0 ? u_Sampler0 : u_Sampler1, textureUnit);
+      gl.uniform1i(textureUnit === 0 ? u_Sampler0 : 
+                  textureUnit === 1 ? u_Sampler1 : 
+                  u_Sampler2, textureUnit);
       console.log(`Texture ${textureUnit} loaded successfully`);
   } catch (e) {
       console.error(`Error loading texture ${textureUnit}:`, e);
