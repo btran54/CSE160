@@ -58,16 +58,29 @@ let u_whichTexture;
 function setupWebGL() {
   // Retrieve <canvas> element
   canvas = document.getElementById('webgl');
+  
+  // Set canvas to fill page width
+  canvas.style.width = '80%';
+  canvas.style.height = 'auto';
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight * 0.8; // 80% of viewport height
+  
+  // Handle window resize
+  window.addEventListener('resize', function() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight * 0.8;
+      gl.viewport(0, 0, canvas.width, canvas.height);
+  });
 
   // Get the rendering context for WebGL
   gl = canvas.getContext("webgl", {preserveDrawingBuffer: true});
   if (!gl) {
-    console.log('Failed to get the rendering context for WebGL');
-    return;
+      console.log('Failed to get the rendering context for WebGL');
+      return;
   }
 
   gl.enable(gl.DEPTH_TEST);
-
+  gl.viewport(0, 0, canvas.width, canvas.height);
 }
 
 function connectVariablesToGLSL() {
