@@ -12,10 +12,11 @@ class BlockyWorld {
 
         // Pre-create cube instances for reuse
         this.wallCube = new Cube();
-        this.wallCube.textureNum = 0;  // Wall texture
+        this.wallCube.textureNum = 0;
         
         this.groundCube = new Cube();
-        this.groundCube.textureNum = 1;  // Grass texture
+        this.groundCube.textureNum = -2;
+        this.groundCube.color = [0.45, 0.62, 0.3, 1.0]; // Adjust these values for a nice grass green
     }
 
     createWorldMap() {
@@ -34,9 +35,12 @@ class BlockyWorld {
     }
 
     drawGround() {
+        console.log("Ground texture number:", this.groundCube.textureNum);
+        console.log("Ground color:", this.groundCube.color);
         this.groundCube.matrix = new Matrix4();
-        this.groundCube.matrix.translate(-this.worldSize/2, -0.5, -this.worldSize/2);
-        this.groundCube.matrix.scale(this.worldSize, 0.1, this.worldSize);
+        this.groundCube.matrix.translate(0, -1, 0);
+        this.groundCube.matrix.scale(100, 0.1, 100);
+        this.groundCube.matrix.translate(-0.5, 0, -0.5);
         this.groundCube.renderfaster();
     }
     

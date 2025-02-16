@@ -15,32 +15,28 @@ var VSHADER_SOURCE = `
     v_UV = a_UV;
 } `
 
-// Fragment shader program
+// In World.js, modify FSHADER_SOURCE
 var FSHADER_SOURCE = `
   precision mediump float;
   varying vec2 v_UV;
   uniform vec4 u_FragColor;
   uniform sampler2D u_Sampler0;
-  uniform sampler2D u_Sampler1;
   uniform int u_whichTexture;
 
   void main() {
     if (u_whichTexture == -2) {
-      gl_FragColor = u_FragColor; // Use Color
+        gl_FragColor = u_FragColor;  // Use the uniform color
     }
     else if (u_whichTexture == -1) {
-      gl_FragColor = vec4(v_UV, 1.0, 1.0); // Use UV debug color
+        gl_FragColor = vec4(v_UV, 1.0, 1.0);
     }
     else if (u_whichTexture == 0) {
-      gl_FragColor = texture2D(u_Sampler0, v_UV); // Use wall texture
-    }
-    else if (u_whichTexture == 1) {
-      gl_FragColor = texture2D(u_Sampler1, v_UV); // Use grass texture
+        gl_FragColor = texture2D(u_Sampler0, v_UV);
     }
     else {
-      gl_FragColor = vec4(1, 0.2, 0.2, 1); // Error color
+        gl_FragColor = u_FragColor;  // Default to uniform color
     }
-  }`
+  } `
 
 let canvas;
 let gl;
@@ -53,7 +49,6 @@ let u_ProjectionMatrix;
 let u_ViewMatrix;
 let u_GlobalRotateMatrix;
 let u_Sampler0;
-let u_Sampler1
 let u_whichTexture;
 
 function setupWebGL() {
@@ -91,11 +86,10 @@ function connectVariablesToGLSL() {
     return;
   }
 
-  // Get the storage location of u_FragColor
   u_FragColor = gl.getUniformLocation(gl.program, 'u_FragColor');
   if (!u_FragColor) {
-    console.log('Failed to get the storage location of u_FragColor');
-    return;
+      console.log('Failed to get the storage location of u_FragColor');
+      return;
   }
 
   u_ModelMatrix = gl.getUniformLocation(gl.program, 'u_ModelMatrix');
@@ -127,13 +121,12 @@ function connectVariablesToGLSL() {
       console.log('Failed to get the storage location of the u_Sampler0');
       return false;
   }
-
-  u_Sampler1 = gl.getUniformLocation(gl.program, 'u_Sampler1');
-  if (!u_Sampler1) {
-      console.log('Failed to get the storage location of the u_Sampler1');
-      return false;
+  
+  u_whichTexture = gl.getUniformLocation(gl.program, 'u_whichTexture');
+  if (!u_whichTexture) {
+      console.log('Failed to get the storage location of u_whichTexture');
+      return;
   }
-
 
   var identityM = new Matrix4();
   gl.uniformMatrix4fv(u_ModelMatrix, false, identityM.elements);
@@ -172,17 +165,25 @@ function addActionsForHtmlUI() {
 }
 
 function initTextures() {
-  // Load wall texture
-  var wallImage = new Image();
-  wallImage.crossOrigin = 'anonymous';
-  wallImage.onload = function() { sendImageToTEXTURE0(wallImage); };
-  wallImage.src = 'cobblestone.jpg';
+  var image = new Image();
+  if (!image) {
+      console.log('Failed to create the image object');
+      return false;
+  }
 
-  // Load grass texture
-  var grassImage = new Image();
-  grassImage.crossOrigin = 'anonymous';
-  grassImage.onload = function() { sendImageToTEXTURE1(grassImage); };
-  grassImage.src = 'grass.jpg';
+  // Set crossOrigin before setting src
+  image.crossOrigin = 'anonymous';
+
+  // Add loading status callback
+  image.onload = function() { sendImageToTEXTURE0(image); };
+  
+  // Set error handler
+  image.onerror = function() {
+      console.log('Failed to load texture image');
+  };
+  
+  // Start loading texture
+  image.src = 'cobblestone.jpg';
 
   return true;
 }
@@ -190,39 +191,27 @@ function initTextures() {
 function sendImageToTEXTURE0(image) {
   var texture = gl.createTexture();
   if (!texture) {
-      console.log('Failed to create the wall texture object');
+      console.log('Failed to create the texture object');
       return false;
   }
 
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
   gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D, texture);
+
+  // Set texture parameters
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
 
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
-  gl.uniform1i(u_Sampler0, 0);
-}
-
-function sendImageToTEXTURE1(image) {
-  var texture = gl.createTexture();
-  if (!texture) {
-      console.log('Failed to create the grass texture object');
-      return false;
+  try {
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+      gl.uniform1i(u_Sampler0, 0);
+      console.log('Texture loaded successfully');
+  } catch (e) {
+      console.error('Error loading texture:', e);
   }
-
-  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
-  gl.activeTexture(gl.TEXTURE1);
-  gl.bindTexture(gl.TEXTURE_2D, texture);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
-  gl.uniform1i(u_Sampler1, 1);
 }
 
 let g_blockyWorld;
