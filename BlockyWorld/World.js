@@ -220,7 +220,6 @@ function sendImageToTexture(image, textureUnit) {
 
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
   
-  // Fix texture unit selection
   switch(textureUnit) {
       case 0:
           gl.activeTexture(gl.TEXTURE0);

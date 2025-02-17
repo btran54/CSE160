@@ -1,7 +1,6 @@
 class BlockyWorld {
     constructor() {
         this.camera = new Camera();
-        // Position camera to look down at world
         this.camera.eye = new Vector3([0, 2, 10]);
         this.camera.at = new Vector3([0, 0, -100]);
         this.camera.up = new Vector3([0, 1, 0]);
@@ -23,14 +22,12 @@ class BlockyWorld {
         this.gameEndText = '';
         this.gameEndColor = '';
     
-        // Create reset button
         const resetButton = document.createElement('button');
         resetButton.textContent = 'Reset Game';
         resetButton.className = 'reset-button';
         resetButton.onclick = () => this.resetGame();
         document.querySelector('.canvas-container').appendChild(resetButton);
     
-        // Add chest interaction
         canvas.addEventListener('mousedown', (e) => {
             if (e.shiftKey && e.button === 0) {
                 this.checkChestInteraction();
@@ -50,21 +47,28 @@ class BlockyWorld {
     }
     
     resetGame() {
-        // Reset game state
         this.gameState = 'playing';
         this.gameEndText = '';
         this.gameEndColor = '';
         
-        // Reset camera position
         this.camera.eye = new Vector3([0, 2, 10]);
         this.camera.at = new Vector3([0, 0, -100]);
         this.camera.up = new Vector3([0, 1, 0]);
         
-        // Reset FOV
         this.fov = 60;
         
-        // Generate new maze
         this.worldMap = this.createMazeMap();
+        
+        const textOverlay = document.getElementById('gameEndText');
+        if (textOverlay) {
+            textOverlay.remove();
+        }
+        
+        if (!gl) {
+            gl = canvas.getContext('webgl', { preserveDrawingBuffer: true });
+            connectVariablesToGLSL();
+            initTextures();
+        }
     }
 
     checkChestInteraction() {
@@ -128,25 +132,22 @@ class BlockyWorld {
     generateMaze(map, x, y) {
         map[x][y] = 0;
         
-        // Define possible directions (right, down, left, up)
         const directions = [
-            [0, 2],  // right
-            [2, 0],  // down
-            [0, -2], // left
-            [-2, 0]  // up
+            [0, 2],
+            [2, 0],
+            [0, -2],
+            [-2, 0]
         ];
         
         // Shuffle directions for randomness
         this.shuffleArray(directions);
         
-        // Try each direction
         for (let [dx, dy] of directions) {
             const newX = x + dx;
             const newY = y + dy;
             const wallX = x + dx/2;
             const wallY = y + dy/2;
             
-            // Check if new position and adjacent position are within bounds and unvisited
             if (newX > 0 && newX < this.worldSize - 2 && 
                 newY > 0 && newY < this.worldSize - 1 && 
                 map[newX][newY] === 1 && 
@@ -213,38 +214,52 @@ class BlockyWorld {
     }
 
     render() {
-    if (this.gameState !== 'playing') {
-        // Clear canvas with game end color
-        gl.clearColor(
-            this.gameState === 'died' ? 0.0 : 0.545,  // Red component: 0 if died, 0.545 if won
-            this.gameState === 'died' ? 0.0 : 0.545,  // Green component: 0 if died, 0.545 if won
-            0.0,                                       // Blue component: always 0
-            1.0                                        // Alpha: always 1
-        );
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-        // Get canvas context for 2D
-        const ctx = canvas.getContext('2d');
+        if (this.gameState !== 'playing') {
+            const originalGl = gl;
+            
+            gl.clearColor(
+                this.gameState === 'died' ? 0.0 : 0.545,
+                this.gameState === 'died' ? 0.0 : 0.545,
+                0.0,
+                1.0
+            );
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            gl.flush();
+    
+            let textOverlay = document.getElementById('gameEndText');
+            if (!textOverlay) {
+                textOverlay = document.createElement('div');
+                textOverlay.id = 'gameEndText';
+                const canvasRect = canvas.getBoundingClientRect();
+                textOverlay.style.position = 'absolute';
+                textOverlay.style.width = canvasRect.width + 'px';
+                textOverlay.style.left = canvasRect.left + 'px';
+                textOverlay.style.top = canvasRect.top + 'px';
+                textOverlay.style.height = canvasRect.height + 'px';
+                textOverlay.style.display = 'flex';
+                textOverlay.style.justifyContent = 'center';
+                textOverlay.style.alignItems = 'center';
+                textOverlay.style.fontSize = '72px';
+                textOverlay.style.fontWeight = 'bold';
+                textOverlay.style.fontFamily = 'Arial';
+                textOverlay.style.pointerEvents = 'none';
+                document.body.appendChild(textOverlay);
+            }
         
-        // Set up text properties
-        ctx.font = 'bold 72px Arial'; // Made font bigger
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillStyle = this.gameState === 'died' ? '#FF0000' : '#0000FF';
+            textOverlay.style.color = this.gameState === 'died' ? '#FF0000' : '#0000FF';
+            textOverlay.textContent = this.gameEndText;
+            return;
+        }
         
-        // Draw the text
-        ctx.fillText(
-            this.gameEndText,
-            canvas.width / 2,
-            canvas.height / 2
-        );
+        else {
+            const textOverlay = document.getElementById('gameEndText');
+            if (textOverlay) {
+                textOverlay.remove();
+            }
+        }
 
-        // Don't restore WebGL context here - let it stay in 2D for the end screen
-        return;
-    }
         const startTime = performance.now();
 
-        // Main view rendering with FOV
         var projMat = new Matrix4();
         projMat.setPerspective(this.fov, canvas.width/canvas.height, 0.1, 500);
         gl.uniformMatrix4fv(u_ProjectionMatrix, false, projMat.elements);
