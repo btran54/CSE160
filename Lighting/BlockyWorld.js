@@ -196,13 +196,13 @@ class BlockyWorld {
                     this.wallCube.matrix.translate(x - this.worldSize/2, 0, z - this.worldSize/2);
                     this.wallCube.renderfaster();
                     
-                    this.wallCube.matrix = new Matrix4();
-                    this.wallCube.matrix.translate(x - this.worldSize/2, 1, z - this.worldSize/2);
-                    this.wallCube.renderfaster();
+                    // this.wallCube.matrix = new Matrix4();
+                    // this.wallCube.matrix.translate(x - this.worldSize/2, 1, z - this.worldSize/2);
+                    // this.wallCube.renderfaster();
 
-                    this.wallCube.matrix = new Matrix4();
-                    this.wallCube.matrix.translate(x - this.worldSize/2, 2, z - this.worldSize/2);
-                    this.wallCube.renderfaster();
+                    // this.wallCube.matrix = new Matrix4();
+                    // this.wallCube.matrix.translate(x - this.worldSize/2, 2, z - this.worldSize/2);
+                    // this.wallCube.renderfaster();
                 }
             }
         }
