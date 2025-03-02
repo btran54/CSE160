@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Blocky World</title>
+    <title>WebGL Lighting</title>
     <style>
       body, html {
         margin: 0;
@@ -89,6 +89,44 @@
         <span id="numdot">ms: -- </span>
         <span id="fpsDisplay">FPS: --</span>
       </div>
+      <p>
+        <button type="button" id="normalOn">Normal On</button>
+        <button type="button" id="normalOff">Normal Off</button>
+      <p>
+
+      <p>
+        Light X <input type="range" min="-250" max="250" value="0" class="slider" id="lightSlideX">
+        Light Y <input type="range" min="-250" max="250" value="100" class="slider" id="lightSlideY">
+        Light Z <input type="range" min="-250" max="250" value="-200" class="slider" id="lightSlideZ">
+      <p>
+
+        <p>
+          <button type="button" id="lightOn">Light On</button>
+          <button type="button" id="lightOff">Light Off</button>
+        </p>
+        
+        <p>
+          <button type="button" id="spotlightOn">Spotlight On</button>
+          <button type="button" id="spotlightOff">Spotlight Off</button>
+        </p>
+        
+        <p>
+          Light Color: 
+          R <input type="range" min="0" max="100" value="100" class="slider" id="lightR">
+          G <input type="range" min="0" max="100" value="100" class="slider" id="lightG">
+          B <input type="range" min="0" max="100" value="100" class="slider" id="lightB">
+        </p>
+        
+        <p>
+          Spotlight Direction: 
+          X <input type="range" min="-100" max="100" value="0" class="slider" id="spotDirX">
+          Y <input type="range" min="-100" max="100" value="-100" class="slider" id="spotDirY">
+          Z <input type="range" min="-100" max="100" value="0" class="slider" id="spotDirZ">
+        </p>
+        
+        <p>
+          <label><input type="checkbox" id="animateLight" checked> Animate Light</label>
+        </p>
       <div class="controls-info">
         Controls: WASD to move, QE to rotate view, Mouse to look around, +/- to zoom
       </div>
@@ -113,6 +151,7 @@
     <script src="Camera.js"></script>
     <script src="Triangle.js"></script>
     <script src="Cube.js"></script>
+    <script src="Sphere.js"></script>
     <script src="World.js"></script>
     <script src="BlockyWorld.js"></script>
   </body>

@@ -8,231 +8,28 @@ class Triangle {
         this.matrix = new Matrix4();
     }
     
-    render() {
-        var rgba = this.color;
-        gl.uniformMatrix4fv(u_ModelMatrix, false, this.matrix.elements);
-
-        if (this.type === 'pyramid') {
-            this.renderPyramid(rgba);
+    // Calculate normal of a triangle given its three vertices
+    calculateNormal(v1, v2, v3) {
+        // Calculate two edges of the triangle
+        let edge1 = [v2[0] - v1[0], v2[1] - v1[1], v2[2] - v1[2]];
+        let edge2 = [v3[0] - v1[0], v3[1] - v1[1], v3[2] - v1[2]];
+        
+        // Cross product of the two edges gives the normal
+        let normal = [
+            edge1[1] * edge2[2] - edge1[2] * edge2[1],
+            edge1[2] * edge2[0] - edge1[0] * edge2[2],
+            edge1[0] * edge2[1] - edge1[1] * edge2[0]
+        ];
+        
+        // Normalize the normal vector
+        let length = Math.sqrt(normal[0]*normal[0] + normal[1]*normal[1] + normal[2]*normal[2]);
+        if (length > 0) {
+            normal[0] /= length;
+            normal[1] /= length;
+            normal[2] /= length;
         }
         
-        else if (this.type === 'rightTop') {
-            this.renderRightTriangleTop(rgba);
-        }
-
-        else if (this.type === 'rightBot'){
-            this.renderRightTriangleBot(rgba);
-        }
-
-        else if (this.type === 'topFin'){
-            this.renderTopFin(rgba);
-        }
-    }
-
-    renderPyramid(rgba) {
-        // Front face (top)
-        gl.uniform4f(u_FragColor, rgba[0], rgba[1], rgba[2], rgba[3]);
-        drawTriangle3D([
-            0.0, 0.5, 0.5,     // bottom front
-            0.0, 0.5, -0.5,    // bottom back
-            1.0, 0.0, 0.0      // tip point
-        ]);
-
-        // Bottom face
-        gl.uniform4f(u_FragColor, rgba[0] * 0.9, rgba[1] * 0.9, rgba[2] * 0.9, rgba[3]);
-        drawTriangle3D([
-            0.0, -0.5, 0.5,    // bottom front
-            0.0, -0.5, -0.5,   // bottom back
-            1.0, 0.0, 0.0      // tip point
-        ]);
-
-        // Front face
-        gl.uniform4f(u_FragColor, rgba[0] * 0.8, rgba[1] * 0.8, rgba[2] * 0.8, rgba[3]);
-        drawTriangle3D([
-            0.0, 0.5, 0.5,     // top front
-            0.0, -0.5, 0.5,    // bottom front
-            1.0, 0.0, 0.0      // tip point
-        ]);
-
-        // Back face
-        gl.uniform4f(u_FragColor, rgba[0] * 0.7, rgba[1] * 0.7, rgba[2] * 0.7, rgba[3]);
-        drawTriangle3D([
-            0.0, 0.5, -0.5,    // top back
-            0.0, -0.5, -0.5,   // bottom back
-            1.0, 0.0, 0.0      // tip point
-        ]);
-
-        // Base (square)
-        gl.uniform4f(u_FragColor, rgba[0] * 0.6, rgba[1] * 0.6, rgba[2] * 0.6, rgba[3]);
-        drawTriangle3D([
-            0.0, 0.5, 0.5,     // top front
-            0.0, -0.5, 0.5,    // bottom front
-            0.0, -0.5, -0.5    // bottom back
-        ]);
-        drawTriangle3D([
-            0.0, 0.5, 0.5,     // top front
-            0.0, 0.5, -0.5,    // top back
-            0.0, -0.5, -0.5    // bottom back
-        ]);
-    }
-
-    // Top Fin
-    renderRightTriangleTop(rgba) {
-        gl.uniform4f(u_FragColor, rgba[0], rgba[1], rgba[2], rgba[3]);
-        drawTriangle3D([
-            0.0, 0.0, 0.0,     
-            1.0, -1.0, 0.0,    
-            1.0, 0.0, 0.0      
-        ]);
-    
-        // Back face
-        gl.uniform4f(u_FragColor, rgba[0] * 0.9, rgba[1] * 0.9, rgba[2] * 0.9, rgba[3]);
-        drawTriangle3D([
-            0.0, 0.0, 0.2,      
-            1.0, -1.0, 0.2,     
-            1.0, 0.0, 0.2      
-        ]);
-    
-        // Top and bottom faces
-        gl.uniform4f(u_FragColor, rgba[0] * 0.8, rgba[1] * 0.8, rgba[2] * 0.8, rgba[3]);
-        drawTriangle3D([
-            0.0, 0.0, 0.0,
-            0.0, 0.0, 0.2,
-            1.0, -1.0, 0.2     
-        ]);
-        drawTriangle3D([
-            0.0, 0.0, 0.0,
-            1.0, -1.0, 0.0,     
-            1.0, -1.0, 0.2     
-        ]);
-    
-        // Right side face
-        gl.uniform4f(u_FragColor, rgba[0] * 0.7, rgba[1] * 0.7, rgba[2] * 0.7, rgba[3]);
-        drawTriangle3D([
-            1.0, 0.0, 0.0,
-            1.0, -1.0, 0.0,
-            1.0, 0.0, 0.2
-        ]);
-        drawTriangle3D([
-            1.0, -1.0, 0.0,
-            1.0, -1.0, 0.2,
-            1.0, 0.0, 0.2
-        ]);
-    
-        // Bottom face
-        gl.uniform4f(u_FragColor, rgba[0] * 0.6, rgba[1] * 0.6, rgba[2] * 0.6, rgba[3]);
-        drawTriangle3D([
-            0.0, 0.0, 0.0,
-            1.0, 0.0, 0.0,
-            1.0, 0.0, 0.2
-        ]);
-        drawTriangle3D([
-            0.0, 0.0, 0.0,
-            0.0, 0.0, 0.2,
-            1.0, 0.0, 0.2
-        ]);
-    }
-    
-    // Bottom Fin
-    renderRightTriangleBot(rgba) {
-        // Front face
-        gl.uniform4f(u_FragColor, rgba[0], rgba[1], rgba[2], rgba[3]);
-        drawTriangle3D([
-            0.0, 0.0, 0.0,      
-            1.0, 1.0, 0.0,     
-            1.0, 0.0, 0.0      
-        ]);
-    
-        // Back face
-        gl.uniform4f(u_FragColor, rgba[0] * 0.9, rgba[1] * 0.9, rgba[2] * 0.9, rgba[3]);
-        drawTriangle3D([
-            0.0, 0.0, 0.2,      
-            1.0, 1.0, 0.2,     
-            1.0, 0.0, 0.2      
-        ]);
-    
-        // Top and bottom faces
-        gl.uniform4f(u_FragColor, rgba[0] * 0.8, rgba[1] * 0.8, rgba[2] * 0.8, rgba[3]);
-        drawTriangle3D([
-            0.0, 0.0, 0.0,
-            0.0, 0.0, 0.2,
-            1.0, 1.0, 0.2      
-        ]);
-        drawTriangle3D([
-            0.0, 0.0, 0.0,
-            1.0, 1.0, 0.0,     
-            1.0, 1.0, 0.2      
-        ]);   
-    
-        // Right side face
-        gl.uniform4f(u_FragColor, rgba[0] * 0.7, rgba[1] * 0.7, rgba[2] * 0.7, rgba[3]);
-        drawTriangle3D([
-            1.0, 0.0, 0.0,
-            1.0, 1.0, 0.0,
-            1.0, 0.0, 0.2
-        ]);
-        drawTriangle3D([
-            1.0, 1.0, 0.0,
-            1.0, 1.0, 0.2,
-            1.0, 0.0, 0.2
-        ]);
-    
-        // Bottom face
-        gl.uniform4f(u_FragColor, rgba[0] * 0.6, rgba[1] * 0.6, rgba[2] * 0.6, rgba[3]);
-        drawTriangle3D([
-            0.0, 0.0, 0.0,
-            1.0, 0.0, 0.0,
-            1.0, 0.0, 0.2
-        ]);
-        drawTriangle3D([
-            0.0, 0.0, 0.0,
-            0.0, 0.0, 0.2,
-            1.0, 0.0, 0.2
-        ]);
-    }
-
-    // Top Fins
-    renderTopFin(rgba) {
-        gl.uniform4f(u_FragColor, rgba[0], rgba[1], rgba[2], rgba[3]);
-        drawTriangle3D([
-            0.0, 0.0, 0.0,       // point
-            -1.0, 1.0, 0.0,      // top left
-            -1.0, 0.0, 0.0       // left point
-        ]);
-    
-        // Back face
-        gl.uniform4f(u_FragColor, rgba[0] * 0.9, rgba[1] * 0.9, rgba[2] * 0.9, rgba[3]);
-        drawTriangle3D([
-            0.0, 0.0, 0.2,       // point
-            -1.0, 1.0, 0.2,      // top left
-            -1.0, 0.0, 0.2       // left point
-        ]);
-    
-        // Top face
-        gl.uniform4f(u_FragColor, rgba[0] * 0.8, rgba[1] * 0.8, rgba[2] * 0.8, rgba[3]);
-        drawTriangle3D([
-            0.0, 0.0, 0.0,
-            0.0, 0.0, 0.2,
-            -1.0, 1.0, 0.2
-        ]);
-        drawTriangle3D([
-            0.0, 0.0, 0.0,
-            -1.0, 1.0, 0.0,
-            -1.0, 1.0, 0.2
-        ]);
-    
-        // Add left side face (the missing face)
-        gl.uniform4f(u_FragColor, rgba[0] * 0.7, rgba[1] * 0.7, rgba[2] * 0.7, rgba[3]);
-        drawTriangle3D([
-            -1.0, 0.0, 0.0,
-            -1.0, 1.0, 0.0,
-            -1.0, 1.0, 0.2
-        ]);
-        drawTriangle3D([
-            -1.0, 0.0, 0.0,
-            -1.0, 0.0, 0.2,
-            -1.0, 1.0, 0.2
-        ]);
+        return normal;
     }
 }
 
@@ -362,10 +159,6 @@ function drawTriangle3DUVNormal(vertices, uv, normals) {
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(uv), gl.DYNAMIC_DRAW);
     gl.vertexAttribPointer(a_UV, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(a_UV);
-
-    gl.drawArrays(gl.TRIANGLES, 0, n);
-
-    g_vertexBuffer = null;
 
     var normalBuffer = gl.createBuffer();
     if (!normalBuffer) {

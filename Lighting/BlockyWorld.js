@@ -258,13 +258,15 @@ class BlockyWorld {
                 textOverlay.remove();
             }
         }
-
+    
         const startTime = performance.now();
-
+    
+        // Set up projection matrix
         var projMat = new Matrix4();
         projMat.setPerspective(this.fov, canvas.width/canvas.height, 0.1, 500);
         gl.uniformMatrix4fv(u_ProjectionMatrix, false, projMat.elements);
-
+    
+        // Set up view matrix
         var viewMat = new Matrix4();
         viewMat.setLookAt(
             this.camera.eye.elements[0], this.camera.eye.elements[1], this.camera.eye.elements[2],
@@ -272,18 +274,84 @@ class BlockyWorld {
             this.camera.up.elements[0], this.camera.up.elements[1], this.camera.up.elements[2]
         );
         gl.uniformMatrix4fv(u_ViewMatrix, false, viewMat.elements);
-
+    
+        // Set up model matrix
         var modelMat = new Matrix4();
         gl.uniformMatrix4fv(u_ModelMatrix, false, modelMat.elements);
-
+    
+        // Set up global rotation matrix
         var rotateMatrix = new Matrix4();
         gl.uniformMatrix4fv(u_GlobalRotateMatrix, false, rotateMatrix.elements);
-
+        
+        // Pass lighting parameters
+        gl.uniform3f(u_lightPos, g_lightPos[0], g_lightPos[1], g_lightPos[2]);
+        gl.uniform3f(u_spotlightPos, g_spotlightPos[0], g_spotlightPos[1], g_spotlightPos[2]);
+        gl.uniform3f(u_spotlightDir, g_spotlightDir[0], g_spotlightDir[1], g_spotlightDir[2]);
+        gl.uniform3f(u_cameraPos, this.camera.eye.elements[0], this.camera.eye.elements[1], this.camera.eye.elements[2]);
+        gl.uniform1i(u_lightOn, g_lightOn);
+        gl.uniform1i(u_spotlightOn, g_spotlightOn);
+        gl.uniform1i(u_normalVis, g_normalOn);
+    
+        // Draw the scene
         this.drawSky();
         this.drawGround();
         this.drawWalls();
         this.drawChest();
-
+        
+        // Draw the sun
+        var sun = new Cube();
+        sun.textureNum = 3; // Use the sun texture
+        sun.matrix = new Matrix4();
+        
+        // Position the sun based on the current light position
+        const sunScale = 5.0; // Make it large
+        const sunDistance = 50.0; // Place it far away
+        
+        // Calculate sun position based on a point on a large sphere around the world
+        const sunX = sunDistance * Math.cos(g_seconds * 0.1);
+        const sunY = sunDistance * Math.abs(Math.sin(g_seconds * 0.1)) + 20;
+        const sunZ = sunDistance * Math.sin(g_seconds * 0.1);
+        
+        sun.matrix.translate(sunX, sunY, sunZ);
+        sun.matrix.scale(sunScale, sunScale, sunScale);
+        sun.matrix.translate(-0.5, -0.5, -0.5);
+        sun.render();
+        
+        // Draw a small cube to represent the point light
+        if (g_lightOn) {
+            var lightCube = new Cube();
+            lightCube.color = [g_lightColor[0], g_lightColor[1], g_lightColor[2], 1];
+            lightCube.matrix = new Matrix4();
+            lightCube.matrix.translate(g_lightPos[0], g_lightPos[1], g_lightPos[2]);
+            lightCube.matrix.scale(0.2, 0.2, 0.2);
+            lightCube.matrix.translate(-0.5, -0.5, -0.5);
+            lightCube.render();
+        }
+        
+        // Draw a small cube to represent the spotlight if enabled
+        if (g_spotlightOn) {
+            var spotlightCube = new Cube();
+            spotlightCube.color = [0, 1, 1, 1]; // Cyan for spotlight
+            spotlightCube.matrix = new Matrix4();
+            spotlightCube.matrix.translate(g_spotlightPos[0], g_spotlightPos[1], g_spotlightPos[2]);
+            spotlightCube.matrix.scale(0.15, 0.15, 0.15);
+            spotlightCube.matrix.translate(-0.5, -0.5, -0.5);
+            spotlightCube.render();
+        }
+        
+        // Draw test spheres for light reflection
+        var sphere = new Sphere();
+        sphere.color = [0.8, 0.2, 0.2, 1.0];
+        sphere.matrix = new Matrix4();
+        sphere.matrix.translate(-2, 0.5, -3);
+        sphere.render();
+        
+        var sphere2 = new Sphere();
+        sphere2.color = [0.2, 0.8, 0.2, 1.0];
+        sphere2.matrix = new Matrix4();
+        sphere2.matrix.translate(2, 0.5, -3);
+        sphere2.render();
+    
         const duration = performance.now() - startTime;
         sendTextToHTML("ms: " + Math.floor(duration), "numdot");
     }

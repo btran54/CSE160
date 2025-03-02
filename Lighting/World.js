@@ -1,57 +1,166 @@
 // ColoredPoint.js (c) 2012 matsuda
-// Vertex shader program
+// Fixed Vertex Shader
 var VSHADER_SOURCE = `
   precision mediump float;
   attribute vec4 a_Position;
   attribute vec2 a_UV;
-  attribute vec3 a Normal;
+  attribute vec3 a_Normal;
   varying vec2 v_UV;
-  attribute vec3 v_Normal;
+  varying vec3 v_Normal;
+  varying vec4 v_VertPos;
   uniform mat4 u_ModelMatrix;
   uniform mat4 u_GlobalRotateMatrix;
   uniform mat4 u_ViewMatrix;
   uniform mat4 u_ProjectionMatrix;
+  uniform mat4 u_NormalMatrix;
 
   void main() {
     gl_Position = u_ProjectionMatrix * u_ViewMatrix * u_GlobalRotateMatrix * u_ModelMatrix * a_Position;
     v_UV = a_UV;
-    v_Normal = a_Normal;
-} `
+    // Transform the normal to world coordinates
+    v_Normal = normalize(vec3(u_NormalMatrix * vec4(a_Normal, 0.0)));
+    // Calculate world position for lighting calculations
+    v_VertPos = u_ModelMatrix * a_Position;
+  }
+`;
 
-// In FSHADER_SOURCE, add a new sampler and case:
+// Fixed Fragment Shader
 var FSHADER_SOURCE = `
   precision mediump float;
   varying vec2 v_UV;
-  carying vec3 v_Normal;
+  varying vec3 v_Normal;
   uniform vec4 u_FragColor;
   uniform sampler2D u_Sampler0; // Ground
   uniform sampler2D u_Sampler1; // Walls
   uniform sampler2D u_Sampler2; // Chest
+  uniform sampler2D u_Sampler3; // Sun
   uniform int u_whichTexture;
+  uniform vec3 u_lightPos;
+  uniform vec3 u_spotlightPos;
+  uniform vec3 u_spotlightDir;
+  uniform vec3 u_cameraPos;
+  varying vec4 v_VertPos;
+  uniform bool u_lightOn;
+  uniform bool u_spotlightOn;
+  uniform bool u_normalVis;
 
   void main() {
-    if (u_whichTexture == -3) {
-        gl_FragColor = vec4((v_Normal+1.0)/2.0, 1.0);
+    // Get base color/texture
+    vec4 baseColor;
+    if (u_whichTexture == -3 || u_normalVis) {
+        baseColor = vec4((v_Normal+1.0)/2.0, 1.0);
     }
     else if (u_whichTexture == -2) {
-        gl_FragColor = u_FragColor;
+        baseColor = u_FragColor;
     }
     else if (u_whichTexture == -1) {
-        gl_FragColor = vec4(v_UV, 1.0, 1.0);
+        baseColor = vec4(v_UV, 1.0, 1.0);
     }
     else if (u_whichTexture == 0) {
-        gl_FragColor = texture2D(u_Sampler0, v_UV);
+        baseColor = texture2D(u_Sampler0, v_UV);
     }
     else if (u_whichTexture == 1) {
-        gl_FragColor = texture2D(u_Sampler1, v_UV);
+        baseColor = texture2D(u_Sampler1, v_UV);
     }
     else if (u_whichTexture == 2) {
-        gl_FragColor = texture2D(u_Sampler2, v_UV);
+        baseColor = texture2D(u_Sampler2, v_UV);
+    }
+    else if (u_whichTexture == 3) {
+        baseColor = texture2D(u_Sampler3, v_UV);
+        // Make the sun always fully bright regardless of lighting
+        gl_FragColor = baseColor;
+        return;
     }
     else {
-        gl_FragColor = vec4(1, 0.2, 0.2, 1);
+        baseColor = vec4(1.0, 0.2, 0.2, 1.0);
     }
-  } `
+    
+    // If normal visualization is enabled, return just the normal color
+    if (u_normalVis) {
+        gl_FragColor = baseColor;
+        return;
+    }
+    
+    // If lighting is off, return the base color/texture
+    if (!u_lightOn) {
+        gl_FragColor = baseColor;
+        return;
+    }
+    
+    // Lighting calculations for point light
+    vec3 lightVector = u_lightPos - vec3(v_VertPos);
+    float r = length(lightVector);
+
+    // Normalized light direction
+    vec3 L = normalize(lightVector);
+
+    // Normal vector
+    vec3 N = normalize(v_Normal);
+
+    // N dot L (diffuse)
+    float nDotL = max(dot(N, L), 0.0);
+
+    // View direction (for specular)
+    vec3 V = normalize(u_cameraPos - vec3(v_VertPos));
+
+    // Reflection vector
+    vec3 R = reflect(-L, N);
+
+    // Specular component
+    float specular = pow(max(dot(V, R), 0.0), 64.0);
+
+    // Ambient component
+    vec3 ambient = vec3(baseColor) * 0.3;
+
+    // Diffuse component
+    vec3 diffuse = vec3(baseColor) * nDotL * 0.7;    
+    
+    // Attenuation for point light
+    float attenuation = 1.0 / (1.0 + 0.1 * r + 0.01 * r * r);
+    
+    // Combined lighting for point light
+    vec3 pointLightColor = ambient + (diffuse + specular * 0.5) * attenuation;
+    
+    // Spotlight calculations if enabled
+    vec3 finalColor = pointLightColor;
+    
+    if (u_spotlightOn) {
+        vec3 spotLightVector = u_spotlightPos - vec3(v_VertPos);
+        float spotDistance = length(spotLightVector);
+        vec3 spotL = normalize(spotLightVector);
+        
+        // Spotlight direction
+        vec3 spotDir = normalize(u_spotlightDir);
+        
+        // Calculate the cosine of the angle between the light vector and spotlight direction
+        float spotEffect = dot(spotDir, -spotL);
+        
+        // Create a spotlight with a cutoff angle (adjust the 0.9 for wider/narrower spot)
+        if (spotEffect > 0.9) {
+            // Attenuate based on how close to center of spotlight
+            float spotIntensity = pow(spotEffect, 8.0);
+            
+            // Calculate spotlight diffuse
+            float spotDiffuse = max(dot(N, spotL), 0.0);
+            
+            // Calculate spotlight specular
+            vec3 spotReflect = reflect(-spotL, N);
+            float spotSpecular = pow(max(dot(V, spotReflect), 0.0), 64.0);
+            
+            // Attenuation for spotlight - distance-based
+            float spotAttenuation = spotIntensity / (1.0 + 0.1 * spotDistance + 0.01 * spotDistance * spotDistance);
+            
+            // Add spotlight contribution to final color
+            finalColor += (vec3(baseColor) * spotDiffuse * 0.7 + spotSpecular * vec3(1.0, 1.0, 1.0)) * spotAttenuation;
+        }
+    }
+    
+    // Clamp final color to avoid overexposure
+    finalColor = min(finalColor, vec3(1.0, 1.0, 1.0));
+    
+    gl_FragColor = vec4(finalColor, baseColor.a);
+  }
+`;
 
 let canvas;
 let gl;
@@ -61,13 +170,22 @@ let a_Normal;
 let u_FragColor;
 let u_Size;
 let u_ModelMatrix;
+let u_NormalMatrix;
 let u_ProjectionMatrix;
 let u_ViewMatrix;
 let u_GlobalRotateMatrix;
 let u_Sampler0;
 let u_Sampler1;
 let u_Sampler2;
+let u_Sampler3;
 let u_whichTexture;
+let u_lightPos;
+let u_spotlightPos;
+let u_spotlightDir;
+let u_cameraPos;
+let u_lightOn;
+let u_spotlightOn;
+let u_normalVis;
 
 function setupWebGL() {
   canvas = document.getElementById('webgl');
@@ -124,9 +242,57 @@ function connectVariablesToGLSL() {
       return;
   }
 
+  u_lightPos = gl.getUniformLocation(gl.program, 'u_lightPos');
+  if (!u_lightPos) {
+      console.log('Failed to get the storage location of u_lightPos');
+      return;
+  }
+  
+  u_spotlightPos = gl.getUniformLocation(gl.program, 'u_spotlightPos');
+  if (!u_spotlightPos) {
+      console.log('Failed to get the storage location of u_spotlightPos');
+      return;
+  }
+  
+  u_spotlightDir = gl.getUniformLocation(gl.program, 'u_spotlightDir');
+  if (!u_spotlightDir) {
+      console.log('Failed to get the storage location of u_spotlightDir');
+      return;
+  }
+
+  u_cameraPos = gl.getUniformLocation(gl.program, 'u_cameraPos');
+  if (!u_cameraPos) {
+      console.log('Failed to get the storage location of u_cameraPos');
+      return;
+  }
+
+  u_lightOn = gl.getUniformLocation(gl.program, 'u_lightOn');
+  if (!u_lightOn) {
+      console.log('Failed to get the storage location of u_lightOn');
+      return;
+  }
+  
+  u_spotlightOn = gl.getUniformLocation(gl.program, 'u_spotlightOn');
+  if (!u_spotlightOn) {
+      console.log('Failed to get the storage location of u_spotlightOn');
+      return;
+  }
+  
+  u_normalVis = gl.getUniformLocation(gl.program, 'u_normalVis');
+  if (!u_normalVis) {
+      console.log('Failed to get the storage location of u_normalVis');
+      return;
+  }
+
   u_ModelMatrix = gl.getUniformLocation(gl.program, 'u_ModelMatrix');
   if (!u_ModelMatrix) {
     console.log('Failed to get the storage location of u_ModelMatrix');
+    return;
+  }
+  
+  u_NormalMatrix = gl.getUniformLocation(gl.program, 'u_NormalMatrix');
+  if (!u_NormalMatrix) {
+    console.log('Failed to get the storage location of u_NormalMatrix');
     return;
   }
 
@@ -165,6 +331,12 @@ function connectVariablesToGLSL() {
       console.log('Failed to get the storage location of u_Sampler2');
       return false;
   }
+  
+  u_Sampler3 = gl.getUniformLocation(gl.program, 'u_Sampler3');
+  if (!u_Sampler3) {
+      console.log('Failed to get the storage location of u_Sampler3');
+      return false;
+  }
 
   u_whichTexture = gl.getUniformLocation(gl.program, 'u_whichTexture');
   if (!u_whichTexture) {
@@ -185,10 +357,82 @@ let g_selectedSize = 5;
 let g_selectedType = POINT;
 let g_selectedSegments = 10;
 let g_normalOn = false;
+let g_lightOn = true;
+let g_spotlightOn = false;
+let g_lightPos = [0, 3, 0];
+let g_spotlightPos = [0, 3, 0];
+let g_spotlightDir = [0, -1, 0];
+let g_lightColor = [1.0, 1.0, 1.0];
 
 function addActionsForHtmlUI() {
-  document.getElementById('normalOn').onclick = function() {g_normalOn=true};
-  document.getElementById('normalOff').onclick = function() {g_normalOn=false};
+  // Normal visualization toggle - use existing HTML elements
+  document.getElementById('normalOn').onclick = function() { g_normalOn = true; };
+  document.getElementById('normalOff').onclick = function() { g_normalOn = false; };
+
+  // Light toggle
+  document.getElementById('lightOn').onclick = function() { g_lightOn = true; };
+  document.getElementById('lightOff').onclick = function() { g_lightOn = false; };
+  
+  // Spotlight toggle
+  document.getElementById('spotlightOn').onclick = function() { g_spotlightOn = true; };
+  document.getElementById('spotlightOff').onclick = function() { g_spotlightOn = false; };
+
+  // Light position sliders - use the existing sliders from HTML
+  document.getElementById('lightSlideX').addEventListener('input', function() {
+    g_lightPos[0] = this.value/50; // Scale down for better control
+  });
+  
+  document.getElementById('lightSlideY').addEventListener('input', function() {
+    g_lightPos[1] = this.value/50; // Scale down for better control
+  });
+  
+  document.getElementById('lightSlideZ').addEventListener('input', function() {
+    g_lightPos[2] = this.value/50; // Scale down for better control
+  });
+  
+  // Spotlight direction sliders
+  document.getElementById('spotDirX').addEventListener('input', function() {
+    g_spotlightDir[0] = this.value/100;
+    normalizeSpotlightDirection();
+  });
+  
+  document.getElementById('spotDirY').addEventListener('input', function() {
+    g_spotlightDir[1] = this.value/100;
+    normalizeSpotlightDirection();
+  });
+  
+  document.getElementById('spotDirZ').addEventListener('input', function() {
+    g_spotlightDir[2] = this.value/100;
+    normalizeSpotlightDirection();
+  });
+  
+  // Light color sliders
+  document.getElementById('lightR').addEventListener('input', function() {
+    g_lightColor[0] = this.value/100;
+  });
+  
+  document.getElementById('lightG').addEventListener('input', function() {
+    g_lightColor[1] = this.value/100;
+  });
+  
+  document.getElementById('lightB').addEventListener('input', function() {
+    g_lightColor[2] = this.value/100;
+  });
+}
+
+// Helper function to normalize the spotlight direction
+function normalizeSpotlightDirection() {
+  let len = Math.sqrt(
+    g_spotlightDir[0]*g_spotlightDir[0] + 
+    g_spotlightDir[1]*g_spotlightDir[1] + 
+    g_spotlightDir[2]*g_spotlightDir[2]
+  );
+  
+  if (len > 0) {
+    g_spotlightDir[0] /= len;
+    g_spotlightDir[1] /= len;
+    g_spotlightDir[2] /= len;
+  }
 }
 
 function initTextures() {
@@ -228,6 +472,35 @@ function initTextures() {
   };
   chestImage.src = 'chest.jpg';
 
+  // Sun texture
+  var sunImage = new Image();
+  if (!sunImage) {
+      console.log('Failed to create the sun image object');
+      return false;
+  }
+  sunImage.crossOrigin = 'anonymous';
+  sunImage.onload = function() { sendImageToTexture(sunImage, 3); };
+  sunImage.onerror = function() {
+      console.log('Failed to load sun texture image');
+      // If we can't load the sun texture, create a fallback
+      let canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 256;
+      let ctx = canvas.getContext('2d');
+      
+      // Create a yellow-orange radial gradient
+      let gradient = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+      gradient.addColorStop(0, 'rgba(255, 255, 200, 1)');
+      gradient.addColorStop(0.5, 'rgba(255, 200, 0, 1)');
+      gradient.addColorStop(1, 'rgba(255, 100, 0, 1)');
+      
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, 256, 256);
+      
+      sendImageToTexture(canvas, 3);
+  };
+  sunImage.src = 'sun.jpg';  // Attempt to load the provided texture
+
   return true;
 }
 
@@ -250,6 +523,9 @@ function sendImageToTexture(image, textureUnit) {
       case 2:
           gl.activeTexture(gl.TEXTURE2);
           break;
+      case 3:
+          gl.activeTexture(gl.TEXTURE3);
+          break;
   }
   
   gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -263,7 +539,8 @@ function sendImageToTexture(image, textureUnit) {
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
       gl.uniform1i(textureUnit === 0 ? u_Sampler0 : 
                   textureUnit === 1 ? u_Sampler1 : 
-                  u_Sampler2, textureUnit);
+                  textureUnit === 2 ? u_Sampler2 :
+                  u_Sampler3, textureUnit);
       console.log(`Texture ${textureUnit} loaded successfully`);
   } catch (e) {
       console.error(`Error loading texture ${textureUnit}:`, e);
@@ -278,12 +555,14 @@ let g_lastMouseY = null;
 function main() {
   setupWebGL();
   connectVariablesToGLSL();
+  
   g_blockyWorld = new BlockyWorld();
   document.onkeydown = keydown;
   canvas.onmousedown = function(ev) { mousedown(ev); };
   canvas.onmouseup = function(ev) { mouseup(ev); };
   canvas.onmousemove = function(ev) { mousemove(ev); };
 
+  addActionsForHtmlUI();
   initTextures(gl, 0);
 
   gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -359,7 +638,11 @@ function tick() {
     g_frameCount++;
     const now = performance.now();
     const elapsed = now - g_lastFPSUpdate;
-
+    
+    // Update light position for animation
+    g_seconds = performance.now()/1000.0 - g_startTime;
+    updateAnimationAngles();
+    
     if (elapsed >= 1000) {
         g_currentFPS = (g_frameCount * 1000) / elapsed;
         document.getElementById('fpsDisplay').textContent = `FPS: ${g_currentFPS.toFixed(1)}`;
@@ -371,6 +654,25 @@ function tick() {
     requestAnimationFrame(tick);
 }
 
+function updateAnimationAngles() {
+  // Animate light in a circle
+  if (document.getElementById('animateLight') && document.getElementById('animateLight').checked) {
+    g_lightPos[0] = 5 * Math.cos(g_seconds);
+    g_lightPos[2] = 5 * Math.sin(g_seconds);
+    
+    // Update slider values to match the animated position
+    if (document.getElementById('lightSlideX')) {
+      document.getElementById('lightSlideX').value = g_lightPos[0] * 10;
+    }
+    if (document.getElementById('lightSlideZ')) {
+      document.getElementById('lightSlideZ').value = g_lightPos[2] * 10;
+    }
+  }
+  
+  // Update spotlight position to match light position
+  g_spotlightPos = g_lightPos.slice();
+}
+
 var g_shapesList = [];
 
 function click(ev) {
@@ -380,11 +682,9 @@ function click(ev) {
   if (g_selectedType == POINT) {
     point = new Point();
   }
-
   else if (g_selectedType == TRIANGLE){
     point = new Triangle();
   }
-
   else {
     point = new Circle();
     point.segments = g_selectedSegments;
@@ -423,9 +723,7 @@ var g_map = [
 function drawMap() {
     var body = new Cube();
     for (x = 0; x < 32; x++) {
-
         for (y = 0; y < 32; y++) {
-
             if (x < 1 || x == 31 || y == 0 || y == 31) {
                 body.color = [0.8, 1, 1, 1];
                 body.matrix.translate(0, -0.75, 0);
@@ -441,7 +739,7 @@ function renderAllShapes() {
   var startTime = performance.now();
 
   var projMat = new Matrix4();
-  projMat.setPersepctive(60, canvas.width / canvas.height, 0.1, 100);
+  projMat.setPerspective(60, canvas.width / canvas.height, 0.1, 100);
   gl.uniformMatrix4fv(u_ProjectionMatrix, false, projMat.elements);
 
   var viewMat = new Matrix4();
@@ -458,17 +756,78 @@ function renderAllShapes() {
   );
   gl.uniformMatrix4fv(u_ViewMatrix, false, viewMat.elements);
 
-  var globalRotMat = new Matrix4().rotate(g_globalAngle, 0, 1, 0);
+  var globalRotMat = new Matrix4().rotate(0, 0, 1, 0);
   gl.uniformMatrix4fv(u_GlobalRotateMatrix, false, globalRotMat.elements);
 
   // Clear <canvas>
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-  gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+  // Pass lighting parameters to the shaders
+  gl.uniform3f(u_lightPos, g_lightPos[0], g_lightPos[1], g_lightPos[2]);
+  gl.uniform3f(u_spotlightPos, g_spotlightPos[0], g_spotlightPos[1], g_spotlightPos[2]);
+  gl.uniform3f(u_spotlightDir, g_spotlightDir[0], g_spotlightDir[1], g_spotlightDir[2]);
+  gl.uniform3f(u_cameraPos, g_blockyWorld.camera.eye.elements[0], g_blockyWorld.camera.eye.elements[1], g_blockyWorld.camera.eye.elements[2]);
+  gl.uniform1i(u_lightOn, g_lightOn);
+  gl.uniform1i(u_spotlightOn, g_spotlightOn);
+  gl.uniform1i(u_normalVis, g_normalOn);
 
   var len = g_shapesList.length;
   for(var i = 0; i < len; i++) {
     g_shapesList[i].render();
   }
+
+  // Draw the point light as a small yellow cube
+  var light = new Cube();
+  light.color = [g_lightColor[0], g_lightColor[1], g_lightColor[2], 1];
+  light.matrix = new Matrix4();
+  light.matrix.translate(g_lightPos[0], g_lightPos[1], g_lightPos[2]);
+  light.matrix.scale(0.2, 0.2, 0.2);
+  light.matrix.translate(-0.5, -0.5, -0.5);
+  light.render();
+  
+  // Draw the sun in the sky
+  var sun = new Cube();
+  sun.textureNum = 3; // Use the sun texture
+  sun.matrix = new Matrix4();
+  
+  // Position the sun based on the current light position, but much further away
+  const sunScale = 5.0; // Make it large
+  const sunDistance = 50.0; // Place it far away
+  
+  // Calculate sun position based on a point on a large sphere around the world
+  const sunX = sunDistance * Math.cos(g_seconds * 0.1);
+  const sunY = sunDistance * Math.abs(Math.sin(g_seconds * 0.1)) + 20;
+  const sunZ = sunDistance * Math.sin(g_seconds * 0.1);
+  
+  sun.matrix.translate(sunX, sunY, sunZ);
+  sun.matrix.scale(sunScale, sunScale, sunScale);
+  sun.matrix.translate(-0.5, -0.5, -0.5);
+  sun.render();
+  
+  // Draw the spotlight if it's enabled
+  if (g_spotlightOn) {
+    var spotLight = new Cube();
+    spotLight.color = [0.0, 1.0, 1.0, 1]; // Cyan for spotlight
+    spotLight.matrix = new Matrix4();
+    spotLight.matrix.translate(g_spotlightPos[0], g_spotlightPos[1], g_spotlightPos[2]);
+    spotLight.matrix.scale(0.15, 0.15, 0.15);
+    spotLight.matrix.translate(-0.5, -0.5, -0.5);
+    spotLight.render();
+  }
+
+  // Draw a test sphere for light reflection
+  var sphere = new Sphere();
+  sphere.color = [0.8, 0.2, 0.2, 1.0];
+  sphere.matrix = new Matrix4();
+  sphere.matrix.translate(-2, 0.5, -3);
+  sphere.render();
+  
+  // Draw a second sphere
+  var sphere2 = new Sphere();
+  sphere2.color = [0.2, 0.8, 0.2, 1.0];
+  sphere2.matrix = new Matrix4();
+  sphere2.matrix.translate(2, 0.5, -3);
+  sphere2.render();
 
   var duration = performance.now() - startTime;
   sendTextToHTML("numdot: " + len + " | ms: " + Math.floor(duration) + " | fps: " + Math.floor(10000/duration)/10, "numdot");
@@ -477,11 +836,10 @@ function renderAllShapes() {
 function sendTextToHTML(text, htmlID) {
   var htmlElem = document.getElementById(htmlID);
 
-  if (!htmlID) {
+  if (!htmlElem) {
     console.log("Failed to get " + htmlID + " from HTML");
     return;
   }
 
   htmlElem.innerHTML = text;
 }
-

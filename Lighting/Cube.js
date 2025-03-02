@@ -6,24 +6,29 @@ class Cube {
         this.textureNum = -2;
 
         this.cubeVerts32 = new Float32Array([
-            // Front
-            0,0,0, 0,0,    1,1,0, 1,1,    1,0,0, 1,0,
-            0,0,0, 0,0,    0,1,0, 0,1,    1,1,0, 1,1,
-            // Right
-            1,0,0, 0,0,    1,1,0, 0,1,    1,1,1, 1,1,
-            1,0,0, 0,0,    1,1,1, 1,1,    1,0,1, 1,0,
-            // Left
-            0,0,0, 1,0,    0,1,1, 0,1,    0,1,0, 0,0,
-            0,0,0, 1,0,    0,0,1, 1,1,    0,1,1, 0,1,
-            // Top
-            0,1,0, 0,0,    0,1,1, 0,1,    1,1,1, 1,1,
-            0,1,0, 0,0,    1,1,1, 1,1,    1,1,0, 1,0,
-            // Back
-            0,0,1, 1,0,    1,0,1, 0,0,    1,1,1, 0,1,
-            0,0,1, 1,0,    1,1,1, 0,1,    0,1,1, 1,1,
-            // Bottom
-            0,0,0, 0,0,    1,0,0, 1,0,    1,0,1, 1,1,
-            0,0,0, 0,0,    1,0,1, 1,1,    0,0,1, 0,1
+            // Front face: normal = (0, 0, 1)
+            0,0,0, 0,0, 0,0,1,    1,1,0, 1,1, 0,0,1,    1,0,0, 1,0, 0,0,1,
+            0,0,0, 0,0, 0,0,1,    0,1,0, 0,1, 0,0,1,    1,1,0, 1,1, 0,0,1,
+            
+            // Right face: normal = (1, 0, 0)
+            1,0,0, 0,0, 1,0,0,    1,1,0, 0,1, 1,0,0,    1,1,1, 1,1, 1,0,0,
+            1,0,0, 0,0, 1,0,0,    1,1,1, 1,1, 1,0,0,    1,0,1, 1,0, 1,0,0,
+            
+            // Left face: normal = (-1, 0, 0)
+            0,0,0, 1,0, -1,0,0,   0,1,1, 0,1, -1,0,0,   0,1,0, 0,0, -1,0,0,
+            0,0,0, 1,0, -1,0,0,   0,0,1, 1,1, -1,0,0,   0,1,1, 0,1, -1,0,0,
+            
+            // Top face: normal = (0, 1, 0)
+            0,1,0, 0,0, 0,1,0,    0,1,1, 0,1, 0,1,0,    1,1,1, 1,1, 0,1,0,
+            0,1,0, 0,0, 0,1,0,    1,1,1, 1,1, 0,1,0,    1,1,0, 1,0, 0,1,0,
+            
+            // Back face: normal = (0, 0, -1)
+            0,0,1, 1,0, 0,0,-1,   1,0,1, 0,0, 0,0,-1,   1,1,1, 0,1, 0,0,-1,
+            0,0,1, 1,0, 0,0,-1,   1,1,1, 0,1, 0,0,-1,   0,1,1, 1,1, 0,0,-1,
+            
+            // Bottom face: normal = (0, -1, 0)
+            0,0,0, 0,0, 0,-1,0,   1,0,0, 1,0, 0,-1,0,   1,0,1, 1,1, 0,-1,0,
+            0,0,0, 0,0, 0,-1,0,   1,0,1, 1,1, 0,-1,0,   0,0,1, 0,1, 0,-1,0
         ]);
     }
   
@@ -32,90 +37,54 @@ class Cube {
 
         gl.uniform1i(u_whichTexture, this.textureNum);
         gl.uniform4f(u_FragColor, rgba[0], rgba[1], rgba[2], rgba[3]);
+        
+        // Pass the model matrix to shader
         gl.uniformMatrix4fv(u_ModelMatrix, false, this.matrix.elements);
+        
+        // Calculate the normal transformation matrix (needed for proper lighting)
+        var normalMatrix = new Matrix4();
+        normalMatrix.setInverseOf(this.matrix);
+        normalMatrix.transpose();
+        gl.uniformMatrix4fv(u_NormalMatrix, false, normalMatrix.elements);
 
-        drawTriangle3DUVNormal(
-            [0,0,0 , 1,1,0 , 1,0,0],
-            [0,0 , 1,1 , 1,0],
-            [0,0,-1 , 0,0,-1 , 0,0,-1]
-        );
+        // Draw cube using the updated vertices with normals
+        this.renderWithNormals();
+    }
 
-        // Front of Cube
-        drawTriangle3DUV([0,0,0, 1,1,0, 1,0,0], [0,0, 1,1, 1,0]);
-        drawTriangle3DUV([0,0,0, 0,1,0, 1,1,0], [0,0, 0,1, 1,1]);
+    renderWithNormals() {
+        if (g_vertexBuffer == null) {
+            g_vertexBuffer = gl.createBuffer();
+        }
 
-        // Right
-        drawTriangle3DUV([1,0,0, 1,1,0, 1,1,1], [0,0, 0,1, 1,1]);
-        drawTriangle3DUV([1,0,0, 1,1,1, 1,0,1], [0,0, 1,1, 1,0]);
+        gl.bindBuffer(gl.ARRAY_BUFFER, g_vertexBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, this.cubeVerts32, gl.DYNAMIC_DRAW);
 
-        // Left
-        drawTriangle3DUV([0,0,0, 0,1,1, 0,1,0], [1,0, 0,1, 0,0]);
-        drawTriangle3DUV([0,0,0, 0,0,1, 0,1,1], [1,0, 1,1, 0,1]);
+        const FSIZE = this.cubeVerts32.BYTES_PER_ELEMENT;
+        
+        // Set up vertex position attribute
+        gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, FSIZE * 8, 0);
+        gl.enableVertexAttribArray(a_Position);
 
-        // Top
-        drawTriangle3DUV([0,1,0, 0,1,1, 1,1,1], [0,0, 0,1, 1,1]);
-        drawTriangle3DUV([0,1,0, 1,1,1, 1,1,0], [0,0, 1,1, 1,0]);
+        // Set up texture coordinates attribute
+        if (this.textureNum !== -2) {
+            gl.vertexAttribPointer(a_UV, 2, gl.FLOAT, false, FSIZE * 8, FSIZE * 3);
+            gl.enableVertexAttribArray(a_UV);
+        } else {
+            gl.disableVertexAttribArray(a_UV);
+        }
+        
+        // Set up normal attribute
+        gl.vertexAttribPointer(a_Normal, 3, gl.FLOAT, false, FSIZE * 8, FSIZE * 5);
+        gl.enableVertexAttribArray(a_Normal);
 
-        // Back
-        drawTriangle3DUV([0,0,1, 1,0,1, 1,1,1], [1,0, 0,0, 0,1]);
-        drawTriangle3DUV([0,0,1, 1,1,1, 0,1,1], [1,0, 0,1, 1,1]);
-
-        // Bottom
-        drawTriangle3DUV([0,0,0, 1,0,0, 1,0,1], [0,0, 1,0, 1,1]);
-        drawTriangle3DUV([0,0,0, 1,0,1, 0,0,1], [0,0, 1,1, 0,1]);
+        gl.drawArrays(gl.TRIANGLES, 0, 36);
     }
 
     renderfast() {
-        var rgba = this.color;
-        gl.uniform1i(u_whichTexture, this.textureNum);
-        gl.uniform4f(u_FragColor, rgba[0], rgba[1], rgba[2], rgba[3]);
-        gl.uniformMatrix4fv(u_ModelMatrix, false, this.matrix.elements);
-
-        if (g_vertexBuffer == null) {
-            g_vertexBuffer = gl.createBuffer();
-        }
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, g_vertexBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, this.cubeVerts32, gl.DYNAMIC_DRAW);
-
-        const FSIZE = this.cubeVerts32.BYTES_PER_ELEMENT;
-        gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, FSIZE * 5, 0);
-        gl.enableVertexAttribArray(a_Position);
-
-        if (this.textureNum !== -2) {
-            gl.vertexAttribPointer(a_UV, 2, gl.FLOAT, false, FSIZE * 5, FSIZE * 3);
-            gl.enableVertexAttribArray(a_UV);
-        } else {
-            gl.disableVertexAttribArray(a_UV);
-        }
-
-        gl.drawArrays(gl.TRIANGLES, 0, 36);
+        this.render(); // Use the new render method
     }
 
     renderfaster() {
-        var rgba = this.color;
-        gl.uniform1i(u_whichTexture, this.textureNum);
-        gl.uniform4f(u_FragColor, rgba[0], rgba[1], rgba[2], rgba[3]);
-        gl.uniformMatrix4fv(u_ModelMatrix, false, this.matrix.elements);
-    
-        if (g_vertexBuffer == null) {
-            g_vertexBuffer = gl.createBuffer();
-        }
-    
-        gl.bindBuffer(gl.ARRAY_BUFFER, g_vertexBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, this.cubeVerts32, gl.DYNAMIC_DRAW);
-    
-        const FSIZE = this.cubeVerts32.BYTES_PER_ELEMENT;
-        gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, FSIZE * 5, 0);
-        gl.enableVertexAttribArray(a_Position);
-    
-        if (this.textureNum !== -2) {
-            gl.vertexAttribPointer(a_UV, 2, gl.FLOAT, false, FSIZE * 5, FSIZE * 3);
-            gl.enableVertexAttribArray(a_UV);
-        } else {
-            gl.disableVertexAttribArray(a_UV);
-        }
-    
-        gl.drawArrays(gl.TRIANGLES, 0, 36);
+        this.render(); // Use the new render method
     }
 }
