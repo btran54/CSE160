@@ -38,16 +38,13 @@ class Cube {
         gl.uniform1i(u_whichTexture, this.textureNum);
         gl.uniform4f(u_FragColor, rgba[0], rgba[1], rgba[2], rgba[3]);
         
-        // Pass the model matrix to shader
         gl.uniformMatrix4fv(u_ModelMatrix, false, this.matrix.elements);
         
-        // Calculate the normal transformation matrix (needed for proper lighting)
         var normalMatrix = new Matrix4();
         normalMatrix.setInverseOf(this.matrix);
         normalMatrix.transpose();
         gl.uniformMatrix4fv(u_NormalMatrix, false, normalMatrix.elements);
 
-        // Draw cube using the updated vertices with normals
         this.renderWithNormals();
     }
 
@@ -61,11 +58,9 @@ class Cube {
 
         const FSIZE = this.cubeVerts32.BYTES_PER_ELEMENT;
         
-        // Set up vertex position attribute
         gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, FSIZE * 8, 0);
         gl.enableVertexAttribArray(a_Position);
 
-        // Set up texture coordinates attribute
         if (this.textureNum !== -2) {
             gl.vertexAttribPointer(a_UV, 2, gl.FLOAT, false, FSIZE * 8, FSIZE * 3);
             gl.enableVertexAttribArray(a_UV);
@@ -73,7 +68,6 @@ class Cube {
             gl.disableVertexAttribArray(a_UV);
         }
         
-        // Set up normal attribute
         gl.vertexAttribPointer(a_Normal, 3, gl.FLOAT, false, FSIZE * 8, FSIZE * 5);
         gl.enableVertexAttribArray(a_Normal);
 
@@ -81,10 +75,10 @@ class Cube {
     }
 
     renderfast() {
-        this.render(); // Use the new render method
+        this.render();
     }
 
     renderfaster() {
-        this.render(); // Use the new render method
+        this.render();
     }
 }

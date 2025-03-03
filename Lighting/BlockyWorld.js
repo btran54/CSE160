@@ -6,6 +6,7 @@ class BlockyWorld {
         this.camera.up = new Vector3([0, 1, 0]);
         
         this.worldSize = 31;
+        this.wallHeight = 2;
         
         this.wallCube = new Cube();
         this.wallCube.textureNum = 0;
@@ -27,6 +28,13 @@ class BlockyWorld {
         resetButton.className = 'reset-button';
         resetButton.onclick = () => this.resetGame();
         document.querySelector('.canvas-container').appendChild(resetButton);
+        
+        const checkInterval = setInterval(() => {
+            if (document.getElementById('toggles-container')) {
+                this.addWallHeightToggle();
+                clearInterval(checkInterval);
+            }
+        }, 50);
     
         canvas.addEventListener('mousedown', (e) => {
             if (e.shiftKey && e.button === 0) {
@@ -44,6 +52,58 @@ class BlockyWorld {
         };
     
         this.worldMap = this.createMazeMap();
+    }
+    
+    addWallHeightToggle() {
+        const togglesContainer = document.getElementById('toggles-container');
+        if (!togglesContainer) return;
+        
+        // Create toggle group
+        const toggleGroup = document.createElement('div');
+        toggleGroup.className = 'toggle-group';
+        
+        // Create label
+        const toggleLabel = document.createElement('span');
+        toggleLabel.textContent = 'Wall Height: ';
+        toggleLabel.className = 'toggle-label';
+        toggleGroup.appendChild(toggleLabel);
+        
+        // Create toggle switch
+        const toggleSwitch = document.createElement('label');
+        toggleSwitch.className = 'toggle-switch';
+        toggleGroup.appendChild(toggleSwitch);
+        
+        // Create checkbox input
+        const toggleInput = document.createElement('input');
+        toggleInput.type = 'checkbox';
+        toggleInput.checked = this.wallHeight === 2;
+        toggleInput.onchange = () => this.toggleWallHeight();
+        toggleSwitch.appendChild(toggleInput);
+        this.toggleInput = toggleInput;
+        
+        // Create slider
+        const toggleSlider = document.createElement('span');
+        toggleSlider.className = 'toggle-slider';
+        toggleSwitch.appendChild(toggleSlider);
+        
+        // Create labels
+        const oneBlockText = document.createElement('span');
+        oneBlockText.className = 'toggle-text-left';
+        oneBlockText.textContent = '1';
+        toggleSlider.appendChild(oneBlockText);
+        
+        const twoBlockText = document.createElement('span');
+        twoBlockText.className = 'toggle-text-right';
+        twoBlockText.textContent = '2';
+        toggleSlider.appendChild(twoBlockText);
+        
+        // Add to container
+        togglesContainer.appendChild(toggleGroup);
+    }
+    
+    toggleWallHeight() {
+        this.wallHeight = this.toggleInput.checked ? 2 : 1;
+        console.log(`Wall height set to ${this.wallHeight} blocks`);
     }
     
     resetGame() {
@@ -75,7 +135,6 @@ class BlockyWorld {
         console.log("Checking chest interaction");
         if (this.gameState !== 'playing') return;
     
-        // Calculate distance to chest
         const playerX = this.camera.eye.elements[0];
         const playerZ = this.camera.eye.elements[2];
         const chestX = this.centerX - this.worldSize/2;
@@ -139,7 +198,6 @@ class BlockyWorld {
             [-2, 0]
         ];
         
-        // Shuffle directions for randomness
         this.shuffleArray(directions);
         
         for (let [dx, dy] of directions) {
@@ -153,10 +211,8 @@ class BlockyWorld {
                 map[newX][newY] === 1 && 
                 map[newX+1][newY] === 1) {
                 
-                // Carve path through wall
                 map[wallX][wallY] = 0;
                 
-                // For vertical paths, carve adjacent vertical path
                 if (dx !== 0) {
                     map[wallX][wallY] = 0;
                 }
@@ -192,17 +248,17 @@ class BlockyWorld {
             for (let z = 0; z < this.worldSize; z++) {
                 const cellType = this.worldMap[x][z];
                 if (cellType === 1) {  // Wall
+                    // Always draw the base block
                     this.wallCube.matrix = new Matrix4();
                     this.wallCube.matrix.translate(x - this.worldSize/2, 0, z - this.worldSize/2);
                     this.wallCube.renderfaster();
                     
-                    // this.wallCube.matrix = new Matrix4();
-                    // this.wallCube.matrix.translate(x - this.worldSize/2, 1, z - this.worldSize/2);
-                    // this.wallCube.renderfaster();
-
-                    // this.wallCube.matrix = new Matrix4();
-                    // this.wallCube.matrix.translate(x - this.worldSize/2, 2, z - this.worldSize/2);
-                    // this.wallCube.renderfaster();
+                    // Only draw the second block if wallHeight is 2
+                    if (this.wallHeight === 2) {
+                        this.wallCube.matrix = new Matrix4();
+                        this.wallCube.matrix.translate(x - this.worldSize/2, 1, z - this.worldSize/2);
+                        this.wallCube.renderfaster();
+                    }
                 }
             }
         }
@@ -261,12 +317,10 @@ class BlockyWorld {
     
         const startTime = performance.now();
     
-        // Set up projection matrix
         var projMat = new Matrix4();
         projMat.setPerspective(this.fov, canvas.width/canvas.height, 0.1, 500);
         gl.uniformMatrix4fv(u_ProjectionMatrix, false, projMat.elements);
     
-        // Set up view matrix
         var viewMat = new Matrix4();
         viewMat.setLookAt(
             this.camera.eye.elements[0], this.camera.eye.elements[1], this.camera.eye.elements[2],
@@ -275,15 +329,12 @@ class BlockyWorld {
         );
         gl.uniformMatrix4fv(u_ViewMatrix, false, viewMat.elements);
     
-        // Set up model matrix
         var modelMat = new Matrix4();
         gl.uniformMatrix4fv(u_ModelMatrix, false, modelMat.elements);
     
-        // Set up global rotation matrix
         var rotateMatrix = new Matrix4();
         gl.uniformMatrix4fv(u_GlobalRotateMatrix, false, rotateMatrix.elements);
         
-        // Pass lighting parameters
         gl.uniform3f(u_lightPos, g_lightPos[0], g_lightPos[1], g_lightPos[2]);
         gl.uniform3f(u_spotlightPos, g_spotlightPos[0], g_spotlightPos[1], g_spotlightPos[2]);
         gl.uniform3f(u_spotlightDir, g_spotlightDir[0], g_spotlightDir[1], g_spotlightDir[2]);
@@ -297,41 +348,24 @@ class BlockyWorld {
         this.drawGround();
         this.drawWalls();
         this.drawChest();
-        
-        // Draw the sun
-        var sun = new Cube();
-        sun.textureNum = 3; // Use the sun texture
-        sun.matrix = new Matrix4();
-        
-        // Position the sun based on the current light position
-        const sunScale = 5.0; // Make it large
-        const sunDistance = 50.0; // Place it far away
-        
-        // Calculate sun position based on a point on a large sphere around the world
-        const sunX = sunDistance * Math.cos(g_seconds * 0.1);
-        const sunY = sunDistance * Math.abs(Math.sin(g_seconds * 0.1)) + 20;
-        const sunZ = sunDistance * Math.sin(g_seconds * 0.1);
-        
-        sun.matrix.translate(sunX, sunY, sunZ);
-        sun.matrix.scale(sunScale, sunScale, sunScale);
-        sun.matrix.translate(-0.5, -0.5, -0.5);
-        sun.render();
-        
-        // Draw a small cube to represent the point light
+                
+        // Draw a cube to represent the point light
         if (g_lightOn) {
             var lightCube = new Cube();
-            lightCube.color = [g_lightColor[0], g_lightColor[1], g_lightColor[2], 1];
+            lightCube.textureNum = 3;
             lightCube.matrix = new Matrix4();
-            lightCube.matrix.translate(g_lightPos[0], g_lightPos[1], g_lightPos[2]);
-            lightCube.matrix.scale(0.2, 0.2, 0.2);
+            // Adjust position
+            lightCube.matrix.translate(g_lightPos[0], g_lightPos[1] + 5, g_lightPos[2]);
+            // Adjust size
+            lightCube.matrix.scale(1, 1, 1);
             lightCube.matrix.translate(-0.5, -0.5, -0.5);
             lightCube.render();
         }
-        
+                
         // Draw a small cube to represent the spotlight if enabled
         if (g_spotlightOn) {
             var spotlightCube = new Cube();
-            spotlightCube.color = [0, 1, 1, 1]; // Cyan for spotlight
+            spotlightCube.color = [0, 1, 1, 1];
             spotlightCube.matrix = new Matrix4();
             spotlightCube.matrix.translate(g_spotlightPos[0], g_spotlightPos[1], g_spotlightPos[2]);
             spotlightCube.matrix.scale(0.15, 0.15, 0.15);

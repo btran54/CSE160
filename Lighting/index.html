@@ -69,11 +69,138 @@
         border: 1px solid #ccc;
         border-radius: 4px;
         z-index: 10;
-    }
-    .reset-button:hover {
+      }
+      .reset-button:hover {
         background: white;
-    }
-      </style>
+      }
+      
+      .toggle-container {
+        position: absolute;
+        right: 20px;
+        top: 70px;
+        display: flex;
+        align-items: center;
+        z-index: 10;
+        background: rgba(255, 255, 255, 0.8);
+        padding: 10px 15px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+      }
+      
+      .toggle-label {
+        margin-right: 10px;
+        font-size: 16px;
+      }
+      
+      .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 60px;
+        height: 30px;
+      }
+      
+      .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+      
+      .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        border-radius: 34px;
+        transition: .4s;
+      }
+      
+      .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 22px;
+        width: 22px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        border-radius: 50%;
+        transition: .4s;
+        z-index: 2;
+      }
+      
+      input:checked + .toggle-slider {
+        background-color: #00c853;
+      }
+      
+      input:checked + .toggle-slider:before {
+        transform: translateX(30px);
+      }
+      
+      .toggle-text-left, .toggle-text-right {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        color: white;
+        font-weight: bold;
+        z-index: 1;
+      }
+      
+      .toggle-text-left {
+        left: 10px;
+      }
+      
+      .toggle-text-right {
+        right: 10px;
+      }
+      
+      .control-panel {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-bottom: 15px;
+      }
+      
+      .toggle-group {
+        display: flex;
+        align-items: center;
+        padding: 8px 15px;
+        background: rgba(255, 255, 255, 0.8);
+        border-radius: 4px;
+        border: 1px solid #ccc;
+      }
+      
+      .slider-group {
+        display: flex;
+        flex-direction: column;
+        padding: 8px 15px;
+        background: rgba(255, 255, 255, 0.8);
+        border-radius: 4px;
+        border: 1px solid #ccc;
+        min-width: 300px;
+      }
+      
+      .slider-group label {
+        margin-bottom: 5px;
+      }
+      
+      .slider-row {
+        display: flex;
+        align-items: center;
+        margin-bottom: 5px;
+      }
+      
+      .slider-row span {
+        width: 15px;
+        text-align: center;
+        margin-right: 10px;
+      }
+      
+      .slider-row input {
+        flex: 1;
+      }
+    </style>
   </head>
 
   <body onload="main()">
@@ -89,58 +216,74 @@
         <span id="numdot">ms: -- </span>
         <span id="fpsDisplay">FPS: --</span>
       </div>
-      <p>
-        <button type="button" id="normalOn">Normal On</button>
-        <button type="button" id="normalOff">Normal Off</button>
-      <p>
+      
+      <div class="control-panel">
+        <!-- Light Position Control -->
+        <div class="slider-group">
+          <label>Light Position</label>
+          <div class="slider-row">
+            <span>X</span>
+            <input type="range" min="-250" max="250" value="0" class="slider" id="lightSlideX">
+          </div>
+          <div class="slider-row">
+            <span>Y</span>
+            <input type="range" min="-250" max="250" value="100" class="slider" id="lightSlideY">
+          </div>
+          <div class="slider-row">
+            <span>Z</span>
+            <input type="range" min="-250" max="250" value="-200" class="slider" id="lightSlideZ">
+          </div>
+        </div>
+        
+        <!-- Spotlight Direction Control -->
+        <div class="slider-group">
+          <label>Spotlight Direction</label>
+          <div class="slider-row">
+            <span>X</span>
+            <input type="range" min="-100" max="100" value="0" class="slider" id="spotDirX">
+          </div>
+          <div class="slider-row">
+            <span>Y</span>
+            <input type="range" min="-100" max="100" value="-100" class="slider" id="spotDirY">
+          </div>
+          <div class="slider-row">
+            <span>Z</span>
+            <input type="range" min="-100" max="100" value="0" class="slider" id="spotDirZ">
+          </div>
+        </div>
+        
+        <!-- Light Color Control -->
+        <div class="slider-group">
+          <label>Light Color</label>
+          <div class="slider-row">
+            <span>R</span>
+            <input type="range" min="0" max="100" value="100" class="slider" id="lightR">
+          </div>
+          <div class="slider-row">
+            <span>G</span>
+            <input type="range" min="0" max="100" value="100" class="slider" id="lightG">
+          </div>
+          <div class="slider-row">
+            <span>B</span>
+            <input type="range" min="0" max="100" value="100" class="slider" id="lightB">
+          </div>
+        </div>
+      </div>
 
-      <p>
-        Light X <input type="range" min="-250" max="250" value="0" class="slider" id="lightSlideX">
-        Light Y <input type="range" min="-250" max="250" value="100" class="slider" id="lightSlideY">
-        Light Z <input type="range" min="-250" max="250" value="-200" class="slider" id="lightSlideZ">
-      <p>
-
-        <p>
-          <button type="button" id="lightOn">Light On</button>
-          <button type="button" id="lightOff">Light Off</button>
-        </p>
-        
-        <p>
-          <button type="button" id="spotlightOn">Spotlight On</button>
-          <button type="button" id="spotlightOff">Spotlight Off</button>
-        </p>
-        
-        <p>
-          Light Color: 
-          R <input type="range" min="0" max="100" value="100" class="slider" id="lightR">
-          G <input type="range" min="0" max="100" value="100" class="slider" id="lightG">
-          B <input type="range" min="0" max="100" value="100" class="slider" id="lightB">
-        </p>
-        
-        <p>
-          Spotlight Direction: 
-          X <input type="range" min="-100" max="100" value="0" class="slider" id="spotDirX">
-          Y <input type="range" min="-100" max="100" value="-100" class="slider" id="spotDirY">
-          Z <input type="range" min="-100" max="100" value="0" class="slider" id="spotDirZ">
-        </p>
-        
-        <p>
-          <label><input type="checkbox" id="animateLight" checked> Animate Light</label>
-        </p>
+      <div id="toggles-container" class="control-panel">
+      </div>
+      
       <div class="controls-info">
         Controls: WASD to move, QE to rotate view, Mouse to look around, +/- to zoom
       </div>
-      <b><b>
-        <div class="notes">
-          <p>Notes:</p>
-          <b>
-            1. The maze was supposed to have a minimap, but everything broke every time I tried to implement it, so I removed it.<br>
-            2. The end is supposed to be a 5x5 flat area, which has a chest in the middle.<br>
-            3. The collision detection is a little finnicky so when you hit a wall you'll just stop. Try using the mouse to move the camera side to side
-                to "squeeze past" the collision detection. <br>
-            4. Get fairly close to the chest and `Shift + Left-Click` the chest for the end-screen.
-          </b>
-        </div>
+      
+      <div class="notes">
+        <p>Notes:</p>
+        <b>
+          1. The maze was changed to be 2 blocks tall instead of 3 for better light visualization.<br>
+          2. There is a toggle to change it to 1 block tall for even better light visualization.<br>
+        </b>
+      </div>
     </div>
 
     <script src="./lib/webgl-utils.js"></script>

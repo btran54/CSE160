@@ -364,33 +364,87 @@ let g_spotlightPos = [0, 3, 0];
 let g_spotlightDir = [0, -1, 0];
 let g_lightColor = [1.0, 1.0, 1.0];
 
-function addActionsForHtmlUI() {
-  // Normal visualization toggle - use existing HTML elements
-  document.getElementById('normalOn').onclick = function() { g_normalOn = true; };
-  document.getElementById('normalOff').onclick = function() { g_normalOn = false; };
-
-  // Light toggle
-  document.getElementById('lightOn').onclick = function() { g_lightOn = true; };
-  document.getElementById('lightOff').onclick = function() { g_lightOn = false; };
+function createToggleSwitch(containerId, labelText, isChecked, onChangeFunction) {
+  const toggleGroup = document.createElement('div');
+  toggleGroup.className = 'toggle-group';
   
-  // Spotlight toggle
-  document.getElementById('spotlightOn').onclick = function() { g_spotlightOn = true; };
-  document.getElementById('spotlightOff').onclick = function() { g_spotlightOn = false; };
+  const toggleLabel = document.createElement('span');
+  toggleLabel.textContent = labelText + ': ';
+  toggleLabel.className = 'toggle-label';
+  toggleGroup.appendChild(toggleLabel);
+  
+  const toggleSwitch = document.createElement('label');
+  toggleSwitch.className = 'toggle-switch';
+  toggleGroup.appendChild(toggleSwitch);
+  
+  const toggleInput = document.createElement('input');
+  toggleInput.type = 'checkbox';
+  toggleInput.checked = isChecked;
+  toggleInput.onchange = onChangeFunction;
+  toggleSwitch.appendChild(toggleInput);
+  
+  const toggleSlider = document.createElement('span');
+  toggleSlider.className = 'toggle-slider';
+  toggleSwitch.appendChild(toggleSlider);
+  
+  const onText = document.createElement('span');
+  onText.className = 'toggle-text-right';
+  onText.textContent = 'I';
+  toggleSlider.appendChild(onText);
+  
+  const offText = document.createElement('span');
+  offText.className = 'toggle-text-left';
+  offText.textContent = 'O';
+  toggleSlider.appendChild(offText);
+  
+  document.getElementById(containerId).appendChild(toggleGroup);
+  
+  return toggleInput;
+}
 
-  // Light position sliders - use the existing sliders from HTML
+function addActionsForHtmlUI() {
+  if (!document.getElementById('toggles-container')) {
+    const togglesContainer = document.createElement('div');
+    togglesContainer.id = 'toggles-container';
+    togglesContainer.className = 'control-panel';
+    document.querySelector('.canvas-container').appendChild(togglesContainer);
+  }
+  
+  const normalToggle = createToggleSwitch('toggles-container', 'Normal', g_normalOn, function() {
+    g_normalOn = this.checked;
+  });
+  
+  const lightToggle = createToggleSwitch('toggles-container', 'Light', g_lightOn, function() {
+    g_lightOn = this.checked;
+  });
+  
+  const spotlightToggle = createToggleSwitch('toggles-container', 'Spotlight', g_spotlightOn, function() {
+    g_spotlightOn = this.checked;
+  });
+  
+  const animateLightToggle = createToggleSwitch('toggles-container', 'Animate Light', true, function() {
+    document.getElementById('animateLight').checked = this.checked;
+  });
+  
+  window.g_toggles = {
+    normalToggle,
+    lightToggle,
+    spotlightToggle,
+    animateLightToggle
+  };
+  
   document.getElementById('lightSlideX').addEventListener('input', function() {
-    g_lightPos[0] = this.value/50; // Scale down for better control
+    g_lightPos[0] = this.value/50;
   });
   
   document.getElementById('lightSlideY').addEventListener('input', function() {
-    g_lightPos[1] = this.value/50; // Scale down for better control
+    g_lightPos[1] = this.value/50;
   });
   
   document.getElementById('lightSlideZ').addEventListener('input', function() {
-    g_lightPos[2] = this.value/50; // Scale down for better control
+    g_lightPos[2] = this.value/50;
   });
   
-  // Spotlight direction sliders
   document.getElementById('spotDirX').addEventListener('input', function() {
     g_spotlightDir[0] = this.value/100;
     normalizeSpotlightDirection();
@@ -406,7 +460,6 @@ function addActionsForHtmlUI() {
     normalizeSpotlightDirection();
   });
   
-  // Light color sliders
   document.getElementById('lightR').addEventListener('input', function() {
     g_lightColor[0] = this.value/100;
   });
@@ -418,9 +471,15 @@ function addActionsForHtmlUI() {
   document.getElementById('lightB').addEventListener('input', function() {
     g_lightColor[2] = this.value/100;
   });
+  
+  const animateLightCheckbox = document.createElement('input');
+  animateLightCheckbox.type = 'checkbox';
+  animateLightCheckbox.id = 'animateLight';
+  animateLightCheckbox.checked = true;
+  animateLightCheckbox.style.display = 'none';
+  document.body.appendChild(animateLightCheckbox);
 }
 
-// Helper function to normalize the spotlight direction
 function normalizeSpotlightDirection() {
   let len = Math.sqrt(
     g_spotlightDir[0]*g_spotlightDir[0] + 
@@ -482,13 +541,11 @@ function initTextures() {
   sunImage.onload = function() { sendImageToTexture(sunImage, 3); };
   sunImage.onerror = function() {
       console.log('Failed to load sun texture image');
-      // If we can't load the sun texture, create a fallback
       let canvas = document.createElement('canvas');
       canvas.width = 256;
       canvas.height = 256;
       let ctx = canvas.getContext('2d');
       
-      // Create a yellow-orange radial gradient
       let gradient = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
       gradient.addColorStop(0, 'rgba(255, 255, 200, 1)');
       gradient.addColorStop(0.5, 'rgba(255, 200, 0, 1)');
@@ -499,7 +556,7 @@ function initTextures() {
       
       sendImageToTexture(canvas, 3);
   };
-  sunImage.src = 'sun.jpg';  // Attempt to load the provided texture
+  sunImage.src = 'sun.jpg';
 
   return true;
 }
@@ -639,7 +696,6 @@ function tick() {
     const now = performance.now();
     const elapsed = now - g_lastFPSUpdate;
     
-    // Update light position for animation
     g_seconds = performance.now()/1000.0 - g_startTime;
     updateAnimationAngles();
     
@@ -655,12 +711,10 @@ function tick() {
 }
 
 function updateAnimationAngles() {
-  // Animate light in a circle
   if (document.getElementById('animateLight') && document.getElementById('animateLight').checked) {
     g_lightPos[0] = 5 * Math.cos(g_seconds);
     g_lightPos[2] = 5 * Math.sin(g_seconds);
     
-    // Update slider values to match the animated position
     if (document.getElementById('lightSlideX')) {
       document.getElementById('lightSlideX').value = g_lightPos[0] * 10;
     }
@@ -669,7 +723,6 @@ function updateAnimationAngles() {
     }
   }
   
-  // Update spotlight position to match light position
   g_spotlightPos = g_lightPos.slice();
 }
 
@@ -699,8 +752,8 @@ function click(ev) {
 }
 
 function convertCoordinatesEventToGL(ev) {
-  var x = ev.clientX; // x coordinate of a mouse pointer
-  var y = ev.clientY; // y coordinate of a mouse pointer
+  var x = ev.clientX;
+  var y = ev.clientY;
   var rect = ev.target.getBoundingClientRect();
 
   x = ((x - rect.left) - canvas.width/2)/(canvas.width/2);
@@ -776,38 +829,20 @@ function renderAllShapes() {
     g_shapesList[i].render();
   }
 
-  // Draw the point light as a small yellow cube
+  // Point light
   var light = new Cube();
-  light.color = [g_lightColor[0], g_lightColor[1], g_lightColor[2], 1];
+  light.textureNum = 3;
   light.matrix = new Matrix4();
-  light.matrix.translate(g_lightPos[0], g_lightPos[1], g_lightPos[2]);
-  light.matrix.scale(0.2, 0.2, 0.2);
+  light.matrix.translate(g_lightPos[0], g_lightPos[1] + 5, g_lightPos[2]);
+  // Adjust size
+  light.matrix.scale(1, 1, 1);
   light.matrix.translate(-0.5, -0.5, -0.5);
   light.render();
-  
-  // Draw the sun in the sky
-  var sun = new Cube();
-  sun.textureNum = 3; // Use the sun texture
-  sun.matrix = new Matrix4();
-  
-  // Position the sun based on the current light position, but much further away
-  const sunScale = 5.0; // Make it large
-  const sunDistance = 50.0; // Place it far away
-  
-  // Calculate sun position based on a point on a large sphere around the world
-  const sunX = sunDistance * Math.cos(g_seconds * 0.1);
-  const sunY = sunDistance * Math.abs(Math.sin(g_seconds * 0.1)) + 20;
-  const sunZ = sunDistance * Math.sin(g_seconds * 0.1);
-  
-  sun.matrix.translate(sunX, sunY, sunZ);
-  sun.matrix.scale(sunScale, sunScale, sunScale);
-  sun.matrix.translate(-0.5, -0.5, -0.5);
-  sun.render();
-  
-  // Draw the spotlight if it's enabled
+    
+  // Spotlight
   if (g_spotlightOn) {
     var spotLight = new Cube();
-    spotLight.color = [0.0, 1.0, 1.0, 1]; // Cyan for spotlight
+    spotLight.color = [0.0, 1.0, 1.0, 1];
     spotLight.matrix = new Matrix4();
     spotLight.matrix.translate(g_spotlightPos[0], g_spotlightPos[1], g_spotlightPos[2]);
     spotLight.matrix.scale(0.15, 0.15, 0.15);
