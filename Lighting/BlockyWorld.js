@@ -342,6 +342,7 @@ class BlockyWorld {
         gl.uniform1i(u_lightOn, g_lightOn);
         gl.uniform1i(u_spotlightOn, g_spotlightOn);
         gl.uniform1i(u_normalVis, g_normalOn);
+        gl.uniform3f(u_lightColor, g_lightColor[0], g_lightColor[1], g_lightColor[2]);
     
         // Draw the scene
         this.drawSky();
@@ -364,15 +365,15 @@ class BlockyWorld {
                 
         // Draw a small cube to represent the spotlight if enabled
         if (g_spotlightOn) {
-            var spotlightCube = new Cube();
-            spotlightCube.color = [0, 1, 1, 1];
-            spotlightCube.matrix = new Matrix4();
-            spotlightCube.matrix.translate(g_spotlightPos[0], g_spotlightPos[1], g_spotlightPos[2]);
-            spotlightCube.matrix.scale(0.15, 0.15, 0.15);
-            spotlightCube.matrix.translate(-0.5, -0.5, -0.5);
-            spotlightCube.render();
+            var spotlightIndicator = new Cube();
+            spotlightIndicator.color = [1.0, 1.0, 0.0, 1.0];
+            spotlightIndicator.matrix = new Matrix4();
+            spotlightIndicator.matrix.translate(g_spotlightPos[0], g_spotlightPos[1], g_spotlightPos[2]);
+            spotlightIndicator.matrix.scale(0.0, 0.0, 0.0);
+            spotlightIndicator.matrix.translate(-0.5, -0.5, -0.5);
+            spotlightIndicator.render();
         }
-        
+                        
         // Draw test spheres for light reflection
         var sphere = new Sphere();
         sphere.color = [0.8, 0.2, 0.2, 1.0];

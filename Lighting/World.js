@@ -43,6 +43,7 @@ var FSHADER_SOURCE = `
   uniform bool u_lightOn;
   uniform bool u_spotlightOn;
   uniform bool u_normalVis;
+  uniform vec3 u_lightColor;
 
   void main() {
     // Get base color/texture
@@ -108,19 +109,20 @@ var FSHADER_SOURCE = `
 
     // Specular component
     float specular = pow(max(dot(V, R), 0.0), 64.0);
+    vec3 specularColor = vec3(1.0, 1.0, 1.0) * u_lightColor;
 
     // Ambient component
     vec3 ambient = vec3(baseColor) * 0.3;
 
-    // Diffuse component
-    vec3 diffuse = vec3(baseColor) * nDotL * 0.7;    
-    
+    // Diffuse component - multiply by light color
+    vec3 diffuse = vec3(baseColor) * nDotL * 0.7 * u_lightColor;    
+   
     // Attenuation for point light
     float attenuation = 1.0 / (1.0 + 0.1 * r + 0.01 * r * r);
     
     // Combined lighting for point light
-    vec3 pointLightColor = ambient + (diffuse + specular * 0.5) * attenuation;
-    
+    vec3 pointLightColor = ambient + (diffuse + specularColor * specular * 0.5) * attenuation;    
+
     // Spotlight calculations if enabled
     vec3 finalColor = pointLightColor;
     
@@ -136,22 +138,22 @@ var FSHADER_SOURCE = `
         float spotEffect = dot(spotDir, -spotL);
         
         // Create a spotlight with a cutoff angle (adjust the 0.9 for wider/narrower spot)
-        if (spotEffect > 0.9) {
-            // Attenuate based on how close to center of spotlight
-            float spotIntensity = pow(spotEffect, 8.0);
+        if (spotEffect > 0.7) {
+          // Attenuate based on how close to center of spotlight (less falloff)
+          float spotIntensity = pow(spotEffect, 4.0);
             
-            // Calculate spotlight diffuse
-            float spotDiffuse = max(dot(N, spotL), 0.0);
+          // Calculate spotlight diffuse
+          float spotDiffuse = max(dot(N, spotL), 0.0);
             
-            // Calculate spotlight specular
-            vec3 spotReflect = reflect(-spotL, N);
-            float spotSpecular = pow(max(dot(V, spotReflect), 0.0), 64.0);
+          // Calculate spotlight specular
+          vec3 spotReflect = reflect(-spotL, N);
+          float spotSpecular = pow(max(dot(V, spotReflect), 0.0), 32.0);
             
-            // Attenuation for spotlight - distance-based
-            float spotAttenuation = spotIntensity / (1.0 + 0.1 * spotDistance + 0.01 * spotDistance * spotDistance);
+          // Less distance attenuation
+          float spotAttenuation = spotIntensity / (1.0 + 0.05 * spotDistance + 0.005 * spotDistance * spotDistance);
             
-            // Add spotlight contribution to final color
-            finalColor += (vec3(baseColor) * spotDiffuse * 0.7 + spotSpecular * vec3(1.0, 1.0, 1.0)) * spotAttenuation;
+          // Stronger contribution to final color
+          finalColor += (vec3(1.0, 1.0, 0.8) * spotDiffuse * 1.5 + spotSpecular * vec3(1.0, 1.0, 0.8)) * spotAttenuation;
         }
     }
     
@@ -186,6 +188,7 @@ let u_cameraPos;
 let u_lightOn;
 let u_spotlightOn;
 let u_normalVis;
+let u_lightColor;
 
 function setupWebGL() {
   canvas = document.getElementById('webgl');
@@ -281,6 +284,12 @@ function connectVariablesToGLSL() {
   u_normalVis = gl.getUniformLocation(gl.program, 'u_normalVis');
   if (!u_normalVis) {
       console.log('Failed to get the storage location of u_normalVis');
+      return;
+  }
+
+  u_lightColor = gl.getUniformLocation(gl.program, 'u_lightColor');
+  if (!u_lightColor) {
+      console.log('Failed to get the storage location of u_lightColor');
       return;
   }
 
@@ -421,7 +430,12 @@ function addActionsForHtmlUI() {
   const spotlightToggle = createToggleSwitch('toggles-container', 'Spotlight', g_spotlightOn, function() {
     g_spotlightOn = this.checked;
   });
-  
+
+  console.log("Initial toggle states:");
+  console.log("Normal: " + g_normalOn);
+  console.log("Light: " + g_lightOn);
+  console.log("Spotlight: " + g_spotlightOn);
+
   const animateLightToggle = createToggleSwitch('toggles-container', 'Animate Light', true, function() {
     document.getElementById('animateLight').checked = this.checked;
   });
@@ -435,42 +449,95 @@ function addActionsForHtmlUI() {
   
   document.getElementById('lightSlideX').addEventListener('input', function() {
     g_lightPos[0] = this.value/50;
+    g_spotlightPos[0] = g_lightPos[0];
   });
   
   document.getElementById('lightSlideY').addEventListener('input', function() {
     g_lightPos[1] = this.value/50;
+    g_spotlightPos[1] = g_lightPos[1];
   });
   
   document.getElementById('lightSlideZ').addEventListener('input', function() {
     g_lightPos[2] = this.value/50;
+    g_spotlightPos[2] = g_lightPos[2];
   });
-  
+
   document.getElementById('spotDirX').addEventListener('input', function() {
     g_spotlightDir[0] = this.value/100;
     normalizeSpotlightDirection();
+    
+    if (g_spotlightOn) {
+      console.log("Spotlight direction updated: ", g_spotlightDir);
+    }
   });
   
   document.getElementById('spotDirY').addEventListener('input', function() {
     g_spotlightDir[1] = this.value/100;
     normalizeSpotlightDirection();
+    
+    if (g_spotlightOn) {
+      console.log("Spotlight direction updated: ", g_spotlightDir);
+    }
   });
   
   document.getElementById('spotDirZ').addEventListener('input', function() {
     g_spotlightDir[2] = this.value/100;
     normalizeSpotlightDirection();
+    
+    if (g_spotlightOn) {
+      console.log("Spotlight direction updated: ", g_spotlightDir);
+    }
   });
-  
+    
   document.getElementById('lightR').addEventListener('input', function() {
     g_lightColor[0] = this.value/100;
+    updateColorPreview();
   });
   
   document.getElementById('lightG').addEventListener('input', function() {
     g_lightColor[1] = this.value/100;
+    updateColorPreview();
   });
   
   document.getElementById('lightB').addEventListener('input', function() {
     g_lightColor[2] = this.value/100;
+    updateColorPreview();
   });
+
+  const colorPreviewContainer = document.createElement('div');
+  colorPreviewContainer.className = 'toggle-group';
+  colorPreviewContainer.style.marginLeft = '15px';
+  document.getElementById('toggles-container').appendChild(colorPreviewContainer);
+
+  const colorPreviewLabel = document.createElement('span');
+  colorPreviewLabel.textContent = 'Light Color: ';
+  colorPreviewLabel.className = 'toggle-label';
+  colorPreviewContainer.appendChild(colorPreviewLabel);
+
+  const colorPreviewBox = document.createElement('div');
+  colorPreviewBox.id = 'color-preview';
+  colorPreviewBox.style.width = '60px';
+  colorPreviewBox.style.height = '30px';
+  colorPreviewBox.style.border = '1px solid #ccc';
+  colorPreviewBox.style.borderRadius = '4px';
+  colorPreviewBox.style.backgroundColor = `rgb(${g_lightColor[0] * 255}, ${g_lightColor[1] * 255}, ${g_lightColor[2] * 255})`;
+  colorPreviewContainer.appendChild(colorPreviewBox);
+
+  document.getElementById('lightR').addEventListener('input', function() {
+    g_lightColor[0] = this.value/100;
+    updateColorPreview();
+  });
+
+  document.getElementById('lightG').addEventListener('input', function() {
+    g_lightColor[1] = this.value/100;
+    updateColorPreview();
+  });
+
+  document.getElementById('lightB').addEventListener('input', function() {
+    g_lightColor[2] = this.value/100;
+    updateColorPreview();
+  });
+
   
   const animateLightCheckbox = document.createElement('input');
   animateLightCheckbox.type = 'checkbox';
@@ -480,6 +547,23 @@ function addActionsForHtmlUI() {
   document.body.appendChild(animateLightCheckbox);
 }
 
+function updateColorPreview() {
+  const r = Math.round(g_lightColor[0] * 255);
+  const g = Math.round(g_lightColor[1] * 255);
+  const b = Math.round(g_lightColor[2] * 255);
+  const colorPreview = document.getElementById('color-preview');
+  colorPreview.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+    
+  colorPreview.innerHTML = '';
+  
+  colorPreview.title = `RGB: ${r}, ${g}, ${b}`;
+}
+
+function getContrastTextColor(r, g, b) {
+  const brightness = (r * 0.299 + g * 0.587 + b * 0.114) / 255;
+  return brightness > 0.5 ? '#000000' : '#FFFFFF';
+}
+
 function normalizeSpotlightDirection() {
   let len = Math.sqrt(
     g_spotlightDir[0]*g_spotlightDir[0] + 
@@ -487,11 +571,16 @@ function normalizeSpotlightDirection() {
     g_spotlightDir[2]*g_spotlightDir[2]
   );
   
-  if (len > 0) {
-    g_spotlightDir[0] /= len;
-    g_spotlightDir[1] /= len;
-    g_spotlightDir[2] /= len;
+  if (len < 0.0001) {
+    g_spotlightDir[0] = 0;
+    g_spotlightDir[1] = -1;
+    g_spotlightDir[2] = 0;
+    return;
   }
+  
+  g_spotlightDir[0] /= len;
+  g_spotlightDir[1] /= len;
+  g_spotlightDir[2] /= len;
 }
 
 function initTextures() {
@@ -711,10 +800,12 @@ function tick() {
 }
 
 function updateAnimationAngles() {
+  // Animate light in a circle
   if (document.getElementById('animateLight') && document.getElementById('animateLight').checked) {
     g_lightPos[0] = 5 * Math.cos(g_seconds);
     g_lightPos[2] = 5 * Math.sin(g_seconds);
     
+    // Update slider values to match the animated position
     if (document.getElementById('lightSlideX')) {
       document.getElementById('lightSlideX').value = g_lightPos[0] * 10;
     }
@@ -723,7 +814,11 @@ function updateAnimationAngles() {
     }
   }
   
-  g_spotlightPos = g_lightPos.slice();
+  // Always set spotlight position to match light position
+  // Using direct assignment rather than .slice()
+  g_spotlightPos[0] = g_lightPos[0];
+  g_spotlightPos[1] = g_lightPos[1];
+  g_spotlightPos[2] = g_lightPos[2];
 }
 
 var g_shapesList = [];
@@ -823,6 +918,7 @@ function renderAllShapes() {
   gl.uniform1i(u_lightOn, g_lightOn);
   gl.uniform1i(u_spotlightOn, g_spotlightOn);
   gl.uniform1i(u_normalVis, g_normalOn);
+  gl.uniform3f(u_lightColor, g_lightColor[0], g_lightColor[1], g_lightColor[2]);
 
   var len = g_shapesList.length;
   for(var i = 0; i < len; i++) {
@@ -840,14 +936,18 @@ function renderAllShapes() {
   light.render();
     
   // Spotlight
-  if (g_spotlightOn) {
-    var spotLight = new Cube();
-    spotLight.color = [0.0, 1.0, 1.0, 1];
-    spotLight.matrix = new Matrix4();
-    spotLight.matrix.translate(g_spotlightPos[0], g_spotlightPos[1], g_spotlightPos[2]);
-    spotLight.matrix.scale(0.15, 0.15, 0.15);
-    spotLight.matrix.translate(-0.5, -0.5, -0.5);
-    spotLight.render();
+  console.log("Spotlight state: " + g_spotlightOn);
+  console.log("Spotlight position:", g_spotlightPos);
+  console.log("Spotlight direction:", g_spotlightDir);
+
+  if (g_lightOn) {
+    var lightCube = new Cube();
+    lightCube.textureNum = 3;
+    lightCube.matrix = new Matrix4();
+    lightCube.matrix.translate(g_lightPos[0], g_lightPos[1] + 5, g_lightPos[2]);
+    lightCube.matrix.scale(0, 0, 0);
+    lightCube.matrix.translate(-0.5, -0.5, -0.5);
+    lightCube.render();
   }
 
   // Draw a test sphere for light reflection
