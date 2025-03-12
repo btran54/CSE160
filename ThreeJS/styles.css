@@ -1,0 +1,88 @@
+/* Three.js specific styles */
+canvas {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1; /* Place canvas behind UI elements */
+}
+
+body {
+    overflow: hidden; /* Prevent scrolling with full canvas */
+}
+
+/* Three.js UI elements */
+#info {
+    position: absolute;
+    top: 100px; /* Below your title */
+    width: 100%;
+    text-align: center;
+    color: white;
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    pointer-events: none; /* Allow clicking through */
+    z-index: 10;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8); /* Make text readable on any background */
+}
+
+#loading {
+    position: absolute;
+    top: 50%;
+    width: 100%;
+    text-align: center;
+    color: white;
+    font-size: 24px;
+    transition: opacity 0.5s;
+    z-index: 20;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+#controls {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    color: white;
+    background-color: rgba(0, 0, 0, 0.6);
+    padding: 10px 15px;
+    border-radius: 5px;
+    z-index: 10;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.loader {
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #3498db;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    animation: spin 1s linear infinite;
+    margin: 10px auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Make sure navigation elements remain above the canvas */
+.home-button, 
+.sidebar, 
+.openbtn, 
+.title {
+    position: relative;
+    z-index: 10;
+}
+
+/* Adjust title position to work with Three.js scene */
+.title {
+    margin-top: 20px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+}
+
+/* Give main container a transparent background */
+#main {
+    background-color: transparent;
+}

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three.js Scene</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="info">Three.js Complete Scene</div>
+    <div id="loading">
+        Loading Scene...
+        <div class="loader"></div>
+        <div id="progress">0%</div>
+    </div>
+    <div id="controls">
+        <div>WASD - Move Camera</div>
+        <div>Arrows - Look Around</div>
+        <div>Space - Toggle Lights</div>
+        <div>Mouse - Orbit Controls</div>
+    </div>
+    
+    <!-- Import Three.js from CDN -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    
+    <!-- Import main script -->
+    <script type="module" src="main.js"></script>
+    
+    <!-- Create a folder structure for the modules -->
+    <!-- modules/
+         ├── camera.js
+         ├── controls.js
+         ├── environment.js
+         ├── lights.js
+         ├── loading.js
+         ├── models.js
+         ├── renderer.js
+         ├── scene.js
+         ├── shapes.js
+         ├── skybox.js
+         └── textures.js
+    -->
+</body>
+</html>
