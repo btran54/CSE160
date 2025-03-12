@@ -3,49 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Three.js Scene</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Three.js Enhanced 3D Scene</title>
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden;
+            background-color: #000;
+        }
+        canvas { 
+            display: block; 
+            width: 100vw;
+            height: 100vh;
+        }
+    </style>
 </head>
 <body>
-    <div id="info">Three.js Complete Scene</div>
-    <div id="loading">
-        Loading Scene...
-        <div class="loader"></div>
-        <div id="progress">0%</div>
-    </div>
-    <div id="controls">
-        <div>WASD - Move Camera</div>
-        <div>Arrows - Look Around</div>
-        <div>Space - Toggle Lights</div>
-        <div>Mouse - Orbit Controls</div>
-    </div>
+    <!-- Import Three.js library -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
     
-    <!-- Import Three.js from CDN -->
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
-            }
-        }
-    </script>
+    <!-- Import OrbitControls -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     
-    <!-- Import main script -->
-    <script type="module" src="main.js"></script>
+    <!-- Import lil-gui for GUI controls -->
+    <script src="https://cdn.jsdelivr.net/npm/lil-gui@0.18/dist/lil-gui.umd.min.js"></script>
     
-    <!-- Create a folder structure for the modules -->
-    <!-- modules/
-         ├── camera.js
-         ├── controls.js
-         ├── environment.js
-         ├── lights.js
-         ├── loading.js
-         ├── models.js
-         ├── renderer.js
-         ├── scene.js
-         ├── shapes.js
-         ├── skybox.js
-         └── textures.js
-    -->
+    <script src="main.js"></script>
 </body>
 </html>
